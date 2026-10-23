@@ -1,7 +1,7 @@
 // Reemplaza "Postiz" por el nombre de la marca en el título de la pestaña.
 // Next.js cambia el <title> al navegar, por eso se vigila con un MutationObserver.
 (function () {
-  var BRAND_NAME = 'PRISMA Social';
+  var BRAND_NAME = 'Prisma CN · Redes';
 
   function fixTitle() {
     if (document.title.indexOf('Postiz') !== -1) {

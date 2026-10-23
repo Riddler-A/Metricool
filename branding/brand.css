@@ -1,53 +1,97 @@
 /*
- * Identidad visual PRISMA sobre Postiz.
+ * Identidad visual de Prisma CN sobre Postiz.
  *
  * Postiz define sus colores como variables CSS en apps/frontend/src/app/colors.scss.
- * Aquí se sobrescriben las principales. Para cambiar la paleta, edita solo el
- * bloque "Paleta PRISMA" y recarga el navegador (no hace falta reiniciar nada).
+ * Aquí se sobrescriben con la paleta de Prisma CN. Para ajustar, edita este archivo
+ * y recarga el navegador (no hace falta reiniciar nada).
  *
  * Si una actualización de Postiz renombra estas variables o clases, la
  * personalización deja de verse pero la herramienta sigue funcionando.
  */
 
-/* Fuente de la marca (opcional): cambia "Inter" por la tipografía de PRISMA */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  /* ===== Paleta PRISMA (reemplaza con tus colores) ===== */
-  --prisma-primary: #1f4fd8;       /* botones principales y acentos */
-  --prisma-primary-soft: #e6edff;  /* fondos de elementos activos (tema claro) */
-  --prisma-primary-dark: #0f2f8f;  /* texto de elementos activos (tema claro) */
-  --prisma-accent: #ff7a1a;        /* botón de IA y resaltados */
-  --prisma-backdrop: #0b1b45;      /* fondo detrás de las ventanas emergentes */
+  /* ===== Paleta Prisma CN ===== */
+  --prisma-hueso: #F6F4F0;       /* fondo base */
+  --prisma-negro: #000000;       /* texto y títulos */
+  --prisma-gris-texto: #4A4A4A;  /* texto secundario */
+  --prisma-gris-nota: #6B6B6B;   /* notas */
+  --prisma-borde: #E2DED6;       /* bordes */
+  --prisma-suave: #ECE9E3;       /* fondos suaves */
+  --prisma-dorado: #C49D3A;      /* detalles; nunca como texto sobre hueso o blanco */
+  --prisma-terracota: #A85C32;   /* acciones, botones y enlaces */
+  --prisma-radio: 12px;
 }
 
-/* Tema claro (clase doble = más especificidad que la hoja original) */
+/* Tema claro: base hueso con texto negro y acciones en terracota.
+   (clase doble = más especificidad que la hoja original de Postiz) */
 :root .light.light {
-  --new-btn-primary: var(--prisma-primary);
-  --new-ai-btn: var(--prisma-accent);
-  --new-textItemFocused: var(--prisma-primary-dark);
-  --new-boxFocused: var(--prisma-primary-soft);
-  --new-table-text-focused: var(--prisma-primary);
-  --new-back-drop: var(--prisma-backdrop);
+  --new-bgColor: var(--prisma-suave);
+  --new-bgColorInner: var(--prisma-hueso);
+  --new-settings: var(--prisma-suave);
+  --new-border: var(--prisma-borde);
+  --new-sep: var(--prisma-borde);
+  --new-bgLineColor: var(--prisma-borde);
+  --new-blockSeparator: var(--prisma-borde);
+  --new-textItemFocused: var(--prisma-negro);
+  --new-textItemBlur: var(--prisma-gris-nota);
+  --new-boxFocused: var(--prisma-borde);
+  --new-btn-simple: var(--prisma-suave);
+  --new-btn-text: var(--prisma-negro);
+  --new-btn-primary: var(--prisma-terracota);  /* texto blanco: contraste 4.9:1 */
+  --new-ai-btn: var(--prisma-negro);
+  --new-box-hover: var(--prisma-suave);
+  --new-table-border: var(--prisma-borde);
+  --new-table-header: var(--prisma-suave);
+  --new-table-text: var(--prisma-gris-texto);
+  --new-table-text-focused: var(--prisma-terracota);
+  --new-big-strips: var(--prisma-suave);
+  --new-col-color: var(--prisma-suave);
+  --new-back-drop: var(--prisma-negro);
 }
 
-/* Tema oscuro */
+/* Tema oscuro: la "pieza especial" de la marca, negro con dorado. */
 :root .dark.dark {
-  --new-btn-primary: var(--prisma-primary);
-  --new-ai-btn: var(--prisma-accent);
-  --new-table-text-focused: var(--prisma-accent);
+  --new-btn-primary: var(--prisma-terracota);
+  --new-ai-btn: var(--prisma-terracota);
+  --new-table-text-focused: var(--prisma-dorado);
 }
 
+/* ===== Tipografía ===== */
 body {
   font-family: 'Inter', system-ui, sans-serif;
 }
+h1, h2, h3 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 600;
+}
 
-/* ===== Logo =====
+/* ===== Forma ===== */
+input, textarea, select {
+  border-radius: var(--prisma-radio);
+}
+
+/* Selección de texto en dorado, no el azul por defecto */
+::selection {
+  background: var(--prisma-dorado);
+  color: var(--prisma-negro);
+}
+
+/* ===== Logotipo =====
  * El logo de Postiz es un <svg> en línea (apps/frontend/src/components/new-layout/logo.tsx).
- * Se ocultan sus trazos y se pinta branding/logo.svg en su lugar.
+ * Se ocultan sus trazos y se pinta el símbolo de Prisma CN en su lugar:
+ *   - tema claro → símbolo negro  (branding/simbolo-negro.png)
+ *   - tema oscuro → símbolo dorado (branding/simbolo-dorado.png), solo va sobre negro
+ * El símbolo no se deforma (contain) y deja aire alrededor (padding).
  */
 svg.min-w-\[60px\].min-h-\[60px\] {
-  background: url('/prisma-brand/logo.svg') center / contain no-repeat;
+  background: url('/prisma-brand/simbolo-negro.png') center / contain no-repeat;
+  background-origin: content-box;
+  padding: 6px;
+}
+.dark svg.min-w-\[60px\].min-h-\[60px\] {
+  background-image: url('/prisma-brand/simbolo-dorado.png');
 }
 svg.min-w-\[60px\].min-h-\[60px\] > * {
   display: none;

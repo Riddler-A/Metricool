@@ -17,7 +17,7 @@ navegador ──HTTPS──► caddy ──► branding (nginx) ──► postiz
 |---|---|
 | `docker-compose.yml` | Todos los servicios. Se basa en el compose oficial de Postiz y agrega Caddy (HTTPS) y la capa de marca. |
 | `.env.example` | Plantilla de configuración: dominio, contraseñas y llaves de las redes sociales. |
-| `branding/` | **Tu identidad visual**: colores (`brand.css`), logo (`logo.svg`), favicon y nombre en la pestaña (`brand.js`). |
+| `branding/` | **Tu identidad visual**: colores (`brand.css`), símbolo (`simbolo-negro.png` y `simbolo-dorado.png`), favicon y nombre en la pestaña (`brand.js`). |
 | `proxy/` | Configuración de Caddy y nginx. Normalmente no necesitas tocarla. |
 | `temporal/` | Configuración de Temporal, el motor que ejecuta las publicaciones programadas. |
 
@@ -70,8 +70,8 @@ el registro.
 
 Todo vive en `branding/` y **no requiere reiniciar**: guarda el archivo y recarga el navegador.
 
-- **Colores:** edita el bloque *Paleta PRISMA* al inicio de `branding/brand.css`.
-- **Logo:** reemplaza `branding/logo.svg` por el logo de PRISMA (SVG, de preferencia cuadrado).
+- **Colores:** ya tienen la paleta de Prisma CN (bloque *Paleta Prisma CN* al inicio de `branding/brand.css`).
+- **Símbolo:** copia a `branding/` los PNG transparentes del prisma con los nombres `simbolo-negro.png` (tema claro) y `simbolo-dorado.png` (tema oscuro). Mientras no estén, el espacio del logo se ve vacío.
 - **Favicon:** reemplaza `branding/favicon.ico`. Por ahora es el de Postiz.
 - **Tipografía:** cambia la línea `@import` y el `font-family` en `brand.css`.
 - **Nombre en la pestaña:** cambia `BRAND_NAME` en `branding/brand.js`.
