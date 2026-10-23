@@ -1,36 +1,21 @@
-# Postiz self-hosted con capa de marca PRISMA.
+# Postiz instalado en el servidor de Prisma CN, con capa de identidad visual.
 # Basado en el docker-compose oficial de gitroomhq/postiz-app (rama main, oct-2026).
 #
-# Flujo de tráfico:
-#   navegador ──HTTPS──► caddy (certificados automáticos)
-#                         └──► branding (nginx: inyecta brand.css / brand.js)
+# Flujo de tráfico en el servidor (HestiaCP):
+#   navegador ──HTTPS──► nginx de Hestia (SSL Let's Encrypt, plantilla hestia/prisma-postiz)
+#                         └──► 127.0.0.1:POSTIZ_PORT → branding (inyecta brand.css / brand.js)
 #                                └──► postiz (imagen oficial, sin modificar)
 #
 # Uso: cp .env.example .env  →  editar .env  →  docker compose up -d
 
 services:
-  caddy:
-    image: caddy:2
-    container_name: prisma-caddy
-    restart: always
-    ports:
-      - '80:80'
-      - '443:443'
-    environment:
-      POSTIZ_DOMAIN: ${POSTIZ_DOMAIN}
-    volumes:
-      - ./proxy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-      - caddy-config:/config
-    networks:
-      - postiz-network
-    depends_on:
-      - branding
-
   branding:
     image: nginx:1.27-alpine
     container_name: prisma-branding
     restart: always
+    # Solo escucha dentro del servidor; Hestia es quien lo publica con HTTPS.
+    ports:
+      - '127.0.0.1:${POSTIZ_PORT:-4007}:80'
     volumes:
       - ./proxy/branding.conf:/etc/nginx/conf.d/default.conf:ro
       - ./branding:/usr/share/nginx/brand:ro
@@ -45,9 +30,11 @@ services:
     restart: always
     environment:
       # === Requeridas
-      MAIN_URL: 'https://${POSTIZ_DOMAIN}'
-      FRONTEND_URL: 'https://${POSTIZ_DOMAIN}'
-      NEXT_PUBLIC_BACKEND_URL: 'https://${POSTIZ_DOMAIN}/api'
+      MAIN_URL: ${POSTIZ_URL}
+      FRONTEND_URL: ${POSTIZ_URL}
+      NEXT_PUBLIC_BACKEND_URL: '${POSTIZ_URL}/api'
+      # Solo para probar en la computadora sin HTTPS. En el servidor debe quedar vacío.
+      NOT_SECURED: ${NOT_SECURED:-}
       JWT_SECRET: ${JWT_SECRET}
       DATABASE_URL: 'postgresql://postiz-user:${POSTGRES_PASSWORD}@postiz-postgres:5432/postiz-db'
       REDIS_URL: 'redis://postiz-redis:6379'
@@ -184,7 +171,8 @@ services:
 
   # Panel de Temporal para depurar publicaciones atoradas.
   # Solo escucha en el propio servidor; ábrelo con un túnel SSH:
-  #   ssh -L 8080:localhost:8080 usuario@tu-servidor  →  http://localhost:8080
+  #   ssh -L 8233:localhost:8233 usuario@servidor  →  http://localhost:8233
+  # (8233 y no 8080, porque en HestiaCP Apache suele ocupar el 8080)
   temporal-ui:
     image: temporalio/ui:2.34.0
     container_name: temporal-ui
@@ -193,13 +181,11 @@ services:
       - TEMPORAL_ADDRESS=temporal:7233
       - TEMPORAL_CORS_ORIGINS=http://127.0.0.1:3000
     ports:
-      - '127.0.0.1:8080:8080'
+      - '127.0.0.1:8233:8080'
     networks:
       - temporal-network
 
 volumes:
-  caddy-data:
-  caddy-config:
   postgres-volume:
   postiz-redis-data:
   postiz-config:

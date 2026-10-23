@@ -1,4 +1,0 @@
-{$POSTIZ_DOMAIN} {
-	encode gzip
-	reverse_proxy branding:80
-}
