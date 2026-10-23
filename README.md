@@ -41,7 +41,7 @@ curl -fsSL https://get.docker.com | sh
 ## 3. Bajar este repo y configurar
 
 ```bash
-git clone https://github.com/riddler-a/metricool.git prisma-social
+git clone https://github.com/Riddler-A/Metricool.git prisma-social
 cd prisma-social
 cp .env.example .env
 nano .env
