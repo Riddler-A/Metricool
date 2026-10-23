@@ -1,0 +1,54 @@
+/*
+ * Identidad visual PRISMA sobre Postiz.
+ *
+ * Postiz define sus colores como variables CSS en apps/frontend/src/app/colors.scss.
+ * Aquí se sobrescriben las principales. Para cambiar la paleta, edita solo el
+ * bloque "Paleta PRISMA" y recarga el navegador (no hace falta reiniciar nada).
+ *
+ * Si una actualización de Postiz renombra estas variables o clases, la
+ * personalización deja de verse pero la herramienta sigue funcionando.
+ */
+
+/* Fuente de la marca (opcional): cambia "Inter" por la tipografía de PRISMA */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  /* ===== Paleta PRISMA (reemplaza con tus colores) ===== */
+  --prisma-primary: #1f4fd8;       /* botones principales y acentos */
+  --prisma-primary-soft: #e6edff;  /* fondos de elementos activos (tema claro) */
+  --prisma-primary-dark: #0f2f8f;  /* texto de elementos activos (tema claro) */
+  --prisma-accent: #ff7a1a;        /* botón de IA y resaltados */
+  --prisma-backdrop: #0b1b45;      /* fondo detrás de las ventanas emergentes */
+}
+
+/* Tema claro (clase doble = más especificidad que la hoja original) */
+:root .light.light {
+  --new-btn-primary: var(--prisma-primary);
+  --new-ai-btn: var(--prisma-accent);
+  --new-textItemFocused: var(--prisma-primary-dark);
+  --new-boxFocused: var(--prisma-primary-soft);
+  --new-table-text-focused: var(--prisma-primary);
+  --new-back-drop: var(--prisma-backdrop);
+}
+
+/* Tema oscuro */
+:root .dark.dark {
+  --new-btn-primary: var(--prisma-primary);
+  --new-ai-btn: var(--prisma-accent);
+  --new-table-text-focused: var(--prisma-accent);
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* ===== Logo =====
+ * El logo de Postiz es un <svg> en línea (apps/frontend/src/components/new-layout/logo.tsx).
+ * Se ocultan sus trazos y se pinta branding/logo.svg en su lugar.
+ */
+svg.min-w-\[60px\].min-h-\[60px\] {
+  background: url('/prisma-brand/logo.svg') center / contain no-repeat;
+}
+svg.min-w-\[60px\].min-h-\[60px\] > * {
+  display: none;
+}
