@@ -40,6 +40,7 @@
   --new-btn-simple: var(--prisma-suave);
   --new-btn-text: var(--prisma-negro);
   --new-btn-primary: var(--prisma-terracota);  /* texto blanco: contraste 4.9:1 */
+  --color-forth: var(--prisma-terracota);      /* botón principal (era el morado de Postiz) */
   --new-ai-btn: var(--prisma-negro);
   --new-box-hover: var(--prisma-suave);
   --new-table-border: var(--prisma-borde);
@@ -54,13 +55,15 @@
 /* Tema oscuro: la "pieza especial" de la marca, negro con dorado. */
 :root .dark.dark {
   --new-btn-primary: var(--prisma-terracota);
+  --color-forth: var(--prisma-terracota);
   --new-ai-btn: var(--prisma-terracota);
   --new-table-text-focused: var(--prisma-dorado);
 }
 
 /* ===== Tipografía ===== */
+/* Postiz pone su fuente con una clase en <body>; por eso el !important. */
 body {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif !important;
 }
 h1, h2, h3 {
   font-family: 'Fraunces', Georgia, serif;
@@ -95,4 +98,75 @@ svg.min-w-\[60px\].min-h-\[60px\] {
 }
 svg.min-w-\[60px\].min-h-\[60px\] > * {
   display: none;
+}
+
+/* ===== Pantalla de inicio de sesión =====
+ * Ahí Postiz usa otro logo (un <svg> de 101×33) y un panel de testimonios propios.
+ * Se pinta el símbolo dorado de Prisma CN (esa pantalla siempre es oscura) y se
+ * oculta el panel, que habla de Postiz y no de Prisma CN.
+ */
+svg[width="101"][height="33"][viewBox="0 0 101 33"] {
+  background: url('/prisma-brand/simbolo-dorado.png') left center / contain no-repeat;
+  height: 44px;
+}
+svg[width="101"][height="33"][viewBox="0 0 101 33"] > * {
+  display: none;
+}
+.text-\[36px\].flex-1.pt-\[88px\].lg\:flex {
+  display: none !important;
+}
+
+/* ===== Morados de Postiz → terracota de Prisma CN =====
+ * Postiz usa su morado de tres formas: variables, clases con el color escrito
+ * (bg-[#612BD3]) y un degradado en algunos botones. Aquí se cubren las tres.
+ * [class~="..."] compara la clase exacta, así no afecta a las variantes hover:.
+ */
+:root {
+  --prisma-terracota-oscuro: #8F4D29;  /* terracota al pasar el cursor */
+  --prisma-cafe: #2A1A10;              /* fondos que eran morado muy oscuro */
+}
+:root .light.light,
+:root .dark.dark {
+  --color-seventh: var(--prisma-terracota);
+  --color-custom4: var(--prisma-terracota);
+  --color-custom7: var(--prisma-terracota);
+  --color-custom30: var(--prisma-terracota);
+  --color-custom45: var(--prisma-terracota);
+  --color-custom51: var(--prisma-terracota);
+  --color-custom29: var(--prisma-cafe);
+  --color-custom50: var(--prisma-cafe);
+}
+
+[class~="bg-[#612BD3]" i],
+[class~="bg-[#7B3FF2]" i],
+[class~="bg-[#7640e0]" i],
+[class~="bg-[#9333ea]" i] {
+  background-color: var(--prisma-terracota) !important;
+}
+[class~="bg-[#5520CB]" i],
+[class~="bg-[#5023b8]" i],
+[class~="hover:bg-[#5520CB]" i]:hover,
+[class~="hover:bg-[#612BD3]" i]:hover {
+  background-color: var(--prisma-terracota-oscuro) !important;
+}
+[class~="border-[#612BD3]" i],
+[class~="border-[#622FF6]" i] {
+  border-color: var(--prisma-terracota) !important;
+}
+[class~="text-[#612BD3]" i],
+[class~="text-[#8b5cf6]" i] {
+  color: var(--prisma-terracota) !important;
+}
+/* Morados claros: solo aparecen sobre fondo oscuro, donde sí va el dorado. */
+[class~="text-[#a78bfa]" i],
+[class~="text-[#c4b5fd]" i],
+[class~="text-[#B69DEC]" i] {
+  color: var(--prisma-dorado) !important;
+}
+[class~="from-[#622aff]" i] {
+  background-image: none !important;
+  background-color: var(--prisma-terracota) !important;
+}
+[class~="from-[#622aff]" i]:hover {
+  background-color: var(--prisma-terracota-oscuro) !important;
 }
