@@ -43,7 +43,11 @@ abierto) con una capa visual de Prisma CN. Dirección final: https://redes.alexi
 - [x] Scripts de instalación, revisión, verificación y respaldo (`scripts/`), probados en
       local.
 - [x] Subdominio `redes.alexisconsultor.com` creado en Hestia con SSL de Let's Encrypt.
-- [x] Archivos subidos al servidor en `~/apps/prisma-redes` (sin `.env`).
+- [x] Archivos subidos al servidor en `~/apps/prisma-redes` (versión del 15-nov-2026).
+- [x] `.env` del servidor ya creado con `scripts/crear-env.sh` (secretos nuevos, permisos
+      600, puerto 3010, versión v2.25.1). Le faltan solo las llaves de las redes.
+- [x] `scripts/revisar.sh` corrido en el servidor: solo marca las dos fallas de la
+      sección 3 (Docker y la plantilla de Hestia).
 
 ## 3. Qué bloquea (lo hace Alexis, no la IA)
 
@@ -76,12 +80,15 @@ git archive HEAD | ssh -i ~/.ssh/hestia_alexisconsultor -o BatchMode=yes alexisc
 ```
 `git archive` no incluye `.env`, así que no pisa el del servidor.
 
-**Paso C. Crear el `.env` del servidor.**
+**Paso C. Confirmar el `.env` del servidor (ya está creado).**
 ```bash
-ssh ... 'cd ~/apps/prisma-redes && bash scripts/crear-env.sh'
+ssh ... 'cd ~/apps/prisma-redes && bash scripts/revisar.sh'
 ```
-Genera los tres secretos sin mostrarlos. Si ya existe un `.env`, no lo toca. No copies el
-`.env` de la computadora: ese es de prueba (`NOT_SECURED=true`, puerto 4007).
+Bien si la parte "Configuración (.env)" sale toda en OK. Si el archivo no existiera,
+`bash scripts/crear-env.sh` lo crea con secretos nuevos sin mostrarlos (y no toca uno que
+ya exista). No copies el `.env` de la computadora: ese es de prueba (`NOT_SECURED=true`,
+puerto 4007). **No lo borres ni lo regeneres después de arrancar**: las bases de datos
+quedan creadas con esas contraseñas.
 
 **Paso D. Instalar.**
 ```bash
