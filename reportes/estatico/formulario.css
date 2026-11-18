@@ -130,3 +130,32 @@ select { width: 100%; padding: 9px 10px; border: 1px solid var(--borde); border-
 .celda-imagen label.boton { cursor: pointer; }
 .importar-csv { margin-top: 12px; padding: 14px 16px; background: var(--hueso); border: 1px dashed var(--borde); border-radius: var(--radio); }
 .importar-csv summary { cursor: pointer; font-weight: 600; }
+
+/* Navegación y diseñador de embudos */
+.barra nav { display: flex; gap: 18px; flex-wrap: wrap; }
+.embudo-elegido { padding: 14px 16px; margin-bottom: 14px; background: var(--hueso); border: 1px solid var(--borde); border-left: 4px solid var(--dorado); border-radius: var(--radio); }
+.embudo-elegido select { max-width: 460px; }
+.etapas { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 10px; }
+.etapa {
+  display: grid; grid-template-columns: 34px 1fr 1fr auto; gap: 0 12px; align-items: end;
+  padding: 12px 14px; background: var(--hueso); border: 1px solid var(--borde); border-radius: var(--radio);
+}
+.etapa .campo { margin: 0; }
+.etapa-num {
+  align-self: center; width: 30px; height: 30px; border-radius: 50%; background: var(--negro); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px;
+}
+.etapa-nota { grid-column: 2 / 4; margin-top: 8px !important; }
+.etapa-acciones { display: flex; gap: 2px; align-self: center; grid-row: 1 / 3; grid-column: 4; }
+.etapa-acciones .boton { min-height: 34px; padding: 0 8px; }
+.etapa-acciones .boton:disabled { opacity: .35; cursor: default; text-decoration: none; }
+.boton:disabled { opacity: .5; cursor: default; transform: none; }
+.grafica svg { display: block; width: 100%; height: auto; font-family: 'Inter', system-ui, sans-serif; }
+.g-etiqueta { font-size: 11px; fill: #000; }
+.g-valor { font-size: 11px; font-weight: 600; fill: #000; }
+.g-paso { font-size: 9.5px; fill: #4A4A4A; }
+@media (max-width: 640px) {
+  .etapa { grid-template-columns: 30px 1fr; }
+  .etapa .campo, .etapa-nota { grid-column: 2; }
+  .etapa-acciones { grid-column: 2; grid-row: auto; }
+}

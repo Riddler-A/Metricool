@@ -150,6 +150,11 @@ Suite del mismo periodo. Puntos a revisar, porque solo se probaron con un Postiz
 Si algo no cuadra, corrígelo en `calculos.js` o `postiz.js`, agrega el caso a
 `reportes/pruebas.test.js` y vuelve a subir.
 
+**Paso H2b. Diseñar los embudos reales.** Con Alexis, en Reportes → Embudos, crear el
+embudo de cada cliente (empezar con una plantilla y ajustar etapas). Preguntarle qué etapas
+mide cada negocio fuera de redes (citas, reservas, ventas en tienda) y quién le pasa esos
+números cada mes: esas etapas van como "se escribe a mano".
+
 **Paso H3 (más adelante). Conectar las plataformas de anuncios por API.** Hoy la pauta se
 importa por CSV. Traerla sola requiere: Meta Marketing API (app de Meta con permiso
 `ads_read` y revisión), TikTok Business API (cuenta de desarrollador y aprobación) y Google Ads

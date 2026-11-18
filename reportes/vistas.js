@@ -63,7 +63,7 @@ ${cuerpo}
 function encabezado(subtitulo) {
   return `<header class="barra">
   <a class="marca" href="${R}/"><img src="/prisma-brand/simbolo-negro.png" alt="" width="28" height="29"><span>Prisma CN · Reportes</span></a>
-  <nav><a href="/launches">Volver a Postiz</a></nav>
+  <nav><a href="${R}/">Reportes</a><a href="${R}/embudos/">Embudos</a><a href="/launches">Volver a Postiz</a></nav>
 </header>${subtitulo ? `<p class="migas">${subtitulo}</p>` : ''}`;
 }
 
@@ -191,7 +191,29 @@ function estadoSeries(series) {
   return `<p class="nota">Datos para gráficas traídos el ${esc(fechaLarga(diaMexico(series.importado)))}: ${dias} días con cifras y ${(series.ranking || []).length} publicaciones en el ranking. Se actualizan cada vez que traes datos.</p>`;
 }
 
-function formulario({ reporte, cuentas, errorCuentas, mensaje }) {
+// Selector del embudo y casillas para las etapas que se escriben a mano.
+function embudoEnFormulario(reporte, listaEmbudos, embudo) {
+  const elegido = embudo?.id || '';
+  const ops = ['<option value="">Embudo general (automático)</option>']
+    .concat(listaEmbudos.map((e) => `<option value="${esc(e.id)}"${e.id === elegido ? ' selected' : ''}>${esc(e.cliente || 'Sin cliente')} · ${esc(e.nombre)}</option>`))
+    .join('');
+  let manuales = '';
+  const etapasManuales = (embudo?.etapas || []).filter((e) => e.fuente === 'manual');
+  if (etapasManuales.length) {
+    const val = reporte.datos?.embudoEtapas || {};
+    const celda = (e, p) => `<td><input type="text" inputmode="decimal" name="datos.embudoEtapas.${esc(e.id)}.${p}" value="${esc(val[e.id]?.[p])}" aria-label="${esc(e.nombre)}: ${p === 'actual' ? 'este periodo' : 'periodo anterior'}"></td>`;
+    const filas = etapasManuales.map((e) => `<tr><th scope="row">${esc(e.nombre)}${e.nota ? `<small>${esc(e.nota)}</small>` : ''}</th>${celda(e, 'actual')}${celda(e, 'anterior')}</tr>`).join('');
+    manuales = `<div class="tabla-campo"><h4>Etapas que se escriben a mano</h4><table><thead><tr><th>Etapa</th><th>Este periodo</th><th>Periodo anterior</th></tr></thead><tbody>${filas}</tbody></table></div>`;
+  }
+  const resumen = embudo ? `Etapas: ${embudo.etapas.map((e) => esc(e.nombre)).join(' → ')}. ` : 'El embudo general usa alcance, interacciones, visitas, clics, mensajes y ventas. ';
+  return `<div class="embudo-elegido">
+  <label class="campo"><span>Embudo de este reporte</span><select name="meta.embudo">${ops}</select></label>
+  <p class="nota">${resumen}<a href="${R}/embudos/">Diseñar o editar embudos</a>. Si cambias de embudo, guarda para ver sus casillas.</p>
+  ${manuales}
+</div>`;
+}
+
+function formulario({ reporte, cuentas, errorCuentas, mensaje, embudos: listaEmbudos = [], embudo = null }) {
   const m = reporte.meta || {};
   const d = reporte.datos || {};
   const ant = calc.periodoAnterior(m.inicio, m.fin);
@@ -211,6 +233,7 @@ function formulario({ reporte, cuentas, errorCuentas, mensaje }) {
   <h2>${esc(s.titulo)}${s.opcional ? ' <span class="etiqueta">opcional</span>' : ''}</h2>
   ${s.ayuda ? `<p class="nota">${esc(s.ayuda)}</p>` : ''}
   ${s.intro ? `<p class="nota">${esc(s.intro)}</p>` : ''}
+  ${s.clave === 'embudo' ? embudoEnFormulario(reporte, listaEmbudos, embudo) : ''}
   ${s.campos.map((c) => campoForm(s, c, d)).join('\n')}
 </section>`
   ).join('\n');
@@ -369,14 +392,16 @@ function graficasAntes(clave, d) {
 }
 
 function graficasDespues(clave, d, extra) {
-  return bloque(graficaDe(clave, d, extra));
+  const html = graficaDe(clave, d, extra);
+  // El embudo del cliente ya trae sus propios bloques (gráfica aparte de la tabla).
+  return clave === 'embudo.frase' && extra.embudo ? html : bloque(html);
 }
 
 function graficaDe(clave, d, extra) {
   switch (clave) {
     case 'resumen.frase': return visuales.tarjetasResumen(d);
     case 'resumen.alerta': return visuales.historial(extra.reporte, extra.otros);
-    case 'embudo.frase': return visuales.graficaEmbudo(d);
+    case 'embudo.frase': return extra.embudo ? visuales.embudoCliente(extra.embudo, d) : visuales.graficaEmbudo(d);
     case 'embudo.visibilidad': return visuales.graficasDiarias(extra.reporte.series);
     case 'embudo.interaccion': return visuales.graficaInteraccion(d);
     case 'porRed.filas': return visuales.graficaRedes(d);
@@ -446,7 +471,7 @@ function pendientes(d) {
   return p;
 }
 
-function reporte({ reporte, otros = [] }) {
+function reporte({ reporte, otros = [], embudo = null }) {
   const m = reporte.meta || {};
   const d = calc.completarCalculados(reporte.datos || {});
   const ant = calc.periodoAnterior(m.inicio, m.fin);
@@ -467,7 +492,7 @@ function reporte({ reporte, otros = [] }) {
   </dl>
 </section>`;
 
-  const cuerpo = SECCIONES.filter((s) => !s.anexo).map((s) => seccionReporte(s, d, { reporte, otros })).join('\n');
+  const cuerpo = SECCIONES.filter((s) => !s.anexo).map((s) => seccionReporte(s, d, { reporte, otros, embudo })).join('\n');
   const glosario = `<section class="seccion anexo"><h2>Anexo</h2><h3>Glosario</h3><table><thead><tr><th>Métrica</th><th>Qué mide, en palabras simples</th></tr></thead><tbody>${GLOSARIO.map(([a, b]) => `<tr><th scope="row">${esc(a)}</th><td>${esc(b)}</td></tr>`).join('')}</tbody></table>
 ${seccionReporte(SECCIONES.find((s) => s.anexo), d).replace('<section class="seccion"', '<div class="sub"').replace(/<\/section>$/, '</div>').replace('<h2>', '<h3>').replace('</h2>', '</h3>')}</section>`;
 
@@ -498,4 +523,4 @@ function error({ titulo, mensaje, estado = 400 }) {
   });
 }
 
-module.exports = { lista, formulario, reporte, error, pendientes, diaMexico };
+module.exports = { lista, formulario, reporte, error, pendientes, diaMexico, pagina, encabezado, esc, fechaLarga };

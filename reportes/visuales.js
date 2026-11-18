@@ -70,6 +70,49 @@ function graficaEmbudo(d) {
   return svg ? `<h3>El embudo del periodo</h3>${svg}<p class="pie-grafica">Cada barra es una etapa; a la derecha, qué parte de la etapa anterior llegó hasta ahí.</p>` : '';
 }
 
+// ---------- Embudo diseñado para el cliente ----------
+
+function embudoCliente(embudo, d) {
+  const { etapas, fuga, total } = require('./embudos').calcular(embudo, d);
+  const conDato = etapas.filter((e) => e.actual !== null);
+  if (conDato.length < 2) {
+    return `<h3>${esc(embudo.nombre)}</h3><p class="pie-grafica">Faltan cifras para dibujar el embudo: llena al menos dos etapas.</p>`;
+  }
+  const svg = g.embudo({ etapas: conDato.map((e) => ({ etiqueta: e.nombre, valor: e.actual })), etiqueta: `Embudo: ${embudo.nombre}` });
+
+  // Más de 100% significa que la etapa tiene más gente que la anterior: pasa cuando los datos
+  // vienen de fuentes distintas (p. ej. visitas al perfil sin haber interactuado).
+  const pct = (v) => (v === null ? '—' : v > 100 ? 'más que la anterior*' : calc.mostrar(v, 'porcentaje'));
+  const filas = etapas
+    .map((e, i) => {
+      const vari = calc.variacion(e.actual, e.anterior);
+      const clase = vari === null ? 'tenue' : vari > 0 ? 'sube' : vari < 0 ? 'baja' : '';
+      const flecha = vari === null ? '—' : `${vari > 0 ? '▲' : vari < 0 ? '▼' : ''} ${calc.mostrarVariacion(vari)}`;
+      const pasa = i === 0 ? '' : `${esc(pct(e.pasa))}${e.pasaAnterior !== null ? `<br><span class="rk-meta">antes ${esc(pct(e.pasaAnterior))}</span>` : ''}`;
+      return `<tr><th scope="row">${i + 1}. ${esc(e.nombre)}${e.nota ? `<br><span class="rk-meta">${esc(e.nota)}</span>` : ''}</th><td class="num">${e.actual === null ? '—' : esc(calc.mostrar(e.actual, 'numero'))}</td><td class="num">${e.anterior === null ? '—' : esc(calc.mostrar(e.anterior, 'numero'))}</td><td class="num ${clase}">${esc(flecha)}</td><td class="num">${pasa}</td></tr>`;
+    })
+    .join('');
+  const tabla = `<table class="tabla-embudo"><colgroup><col class="col-etapa"><col><col><col><col></colgroup><thead><tr><th>Etapa</th><th class="num">Este periodo</th><th class="num">Periodo anterior</th><th class="num">Variación</th><th class="num">Pasa de la anterior</th></tr></thead><tbody>${filas}</tbody></table>`;
+
+  const ideas = [];
+  if (total !== null) {
+    // Con porcentajes muy chicos se cuenta "de cada 1,000" para no hablar de fracciones de persona.
+    const base = total >= 1 ? 100 : 1000;
+    const cuantos = Math.round(((total * base) / 100) * 10) / 10;
+    ideas.push(`De cada ${esc(calc.mostrar(base, 'numero'))} personas en "${esc(etapas[0].nombre)}", <strong>${esc(calc.mostrar(cuantos, 'numero'))}</strong> llegaron a "${esc(etapas.at(-1).nombre)}".`);
+  }
+  if (fuga) ideas.push(`Donde más gente se pierde es entre <strong>${esc(fuga.desde)}</strong> y <strong>${esc(fuga.hasta)}</strong>: solo pasa el ${esc(pct(fuga.pasa))}.`);
+  const faltan = etapas.filter((e) => e.actual === null).map((e) => e.nombre);
+  if (faltan.length) ideas.push(`Sin dato este periodo: ${faltan.map(esc).join(', ')}.`);
+  if (etapas.some((e) => e.pasa > 100 || e.pasaAnterior > 100)) {
+    ideas.push('* Una etapa tiene más personas que la anterior. Pasa cuando sus datos vienen de otra fuente (por ejemplo, gente que visitó el perfil sin dar like). No es un error, pero conviene revisar el orden de las etapas.');
+  }
+
+  // Gráfica y conclusiones van juntas; la tabla puede pasar a la página siguiente.
+  const ideasHtml = ideas.length ? `<ul class="ideas-embudo">${ideas.map((x) => `<li>${x}</li>`).join('')}</ul>` : '';
+  return `<div class="bloque-grafica"><h3>${esc(embudo.nombre)}</h3>${svg}${ideasHtml}</div>${tabla}`;
+}
+
 // ---------- Series diarias (vienen de "Traer datos de Postiz") ----------
 
 function graficasDiarias(series) {
@@ -260,6 +303,7 @@ function historial(reporte, otros) {
 module.exports = {
   tarjetasResumen,
   graficaEmbudo,
+  embudoCliente,
   graficasDiarias,
   graficaInteraccion,
   ranking,

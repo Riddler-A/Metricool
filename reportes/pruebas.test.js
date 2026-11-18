@@ -308,3 +308,69 @@ test('tarjetas de campaña con foto y comparación de costos', () => {
   assert.match(html, /Por plataforma/);
   assert.match(html, /Costo por resultado por campaña/);
 });
+
+// ---------- Embudos ----------
+
+test('embudo: cifras por etapa, fuga mayor y etapas a mano', () => {
+  const e = require('./embudos');
+  const embudo = e.desdePlantilla('servicios', 'Café');
+  const [vieron, interactuaron, escribieron, agendaron, clientes] = embudo.etapas;
+  assert.equal(agendaron.fuente, 'manual');
+  const datos = {
+    embudo: {
+      visibilidad: { alcance: { actual: '10,000', anterior: '8000' } },
+      interaccion: { likes: { actual: '500' }, comentarios: { actual: '100' } },
+      conversion: { dm: { actual: '20' }, whatsapp: { actual: '40' }, ventas: { actual: '12', anterior: '9' } },
+    },
+    embudoEtapas: { [agendaron.id]: { actual: '30', anterior: '25' } },
+  };
+  const r = e.calcular(embudo, datos);
+  assert.deepEqual(r.etapas.map((x) => x.actual), [10000, 600, 60, 30, 12]);
+  assert.equal(r.etapas[1].pasa, 6);
+  assert.equal(r.etapas[2].pasa, 10);
+  assert.equal(r.fuga.desde, vieron.nombre); // 10,000 → 600 es donde menos pasa (6%)
+  assert.equal(r.fuga.hasta, interactuaron.nombre);
+  assert.equal(r.total, 0.12);
+  assert.equal(r.etapas[0].anterior, 8000);
+  assert.equal(r.etapas[1].anterior, null); // sin datos del periodo anterior
+  assert.equal(escribieron.fuente, 'mensajes');
+  assert.equal(clientes.fuente, 'ventas');
+});
+
+test('embudo: el diseñador no acepta fuentes inventadas ni etapas vacías', () => {
+  const e = require('./embudos');
+  const previo = e.desdePlantilla('vacio', 'X');
+  const limpio = e.limpiar({
+    nombre: 'Mi embudo',
+    cliente: ' Café Norte ',
+    etapas: [
+      { id: 'e1234567', nombre: 'Nos vieron', fuente: 'alcance' },
+      { id: '12345678', nombre: 'Agendaron', fuente: 'inventada' },
+      { nombre: '   ', fuente: 'ventas' },
+      ...Array.from({ length: 12 }, (_, i) => ({ nombre: `Extra ${i}`, fuente: 'manual' })),
+    ],
+  }, previo);
+  assert.equal(limpio.cliente, 'Café Norte');
+  assert.equal(limpio.etapas.length, 10);
+  assert.equal(limpio.etapas[0].id, 'e1234567');
+  assert.match(limpio.etapas[1].id, /^e[a-f0-9]{7}$/); // id solo de dígitos se reemplaza
+  assert.equal(limpio.etapas[1].fuente, 'manual');
+  assert.equal(limpio.id, previo.id);
+});
+
+test('embudo en el reporte: gráfica, tabla e ideas', () => {
+  const e = require('./embudos');
+  const v = require('./visuales');
+  const embudo = e.desdePlantilla('tienda', 'Tienda <x>');
+  const carrito = embudo.etapas.find((x) => x.fuente === 'manual');
+  const html = v.embudoCliente(embudo, {
+    embudo: { visibilidad: { alcance: { actual: '20000' } }, conversion: { clics: { actual: '400' }, ventas: { actual: '8' } } },
+    embudoEtapas: { [carrito.id]: { actual: '60' } },
+  });
+  assert.match(html, /<svg/);
+  assert.match(html, /De cada 1,000 personas/); // 0.04% → se cuenta por cada 1,000
+  assert.match(html, /Donde más gente se pierde/);
+  assert.match(html, /Pasa de la anterior/);
+  const vacio = v.embudoCliente(embudo, {});
+  assert.match(vacio, /Faltan cifras/);
+});

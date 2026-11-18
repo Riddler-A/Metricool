@@ -187,3 +187,11 @@ table.ranking img, table.ranking .sin-miniatura {
 .campana dt { font-size: 7pt; color: var(--gris-nota); }
 .campana dd { margin: 0; font-size: 9.5pt; font-weight: 600; font-variant-numeric: tabular-nums; }
 @media screen and (max-width: 820px) { .campanas { grid-template-columns: 1fr; } }
+
+/* ----- Embudo del cliente ----- */
+.ideas-embudo { margin: 0 0 4mm; padding: 3mm 5mm 3mm 9mm; background: var(--suave); border-radius: var(--radio); border-left: 1.2mm solid var(--dorado); }
+.ideas-embudo li { margin: 1mm 0; }
+table.tabla-embudo { table-layout: fixed; }
+table.tabla-embudo col.col-etapa { width: 38%; }
+table.tabla-embudo .num { white-space: normal; }
+table.tabla-embudo { break-inside: auto; }

@@ -214,6 +214,15 @@ Cómo funciona:
   tarjetas de pauta (CPM, CPC, CTR y costo por resultado se calculan solos). Colores:
   terracota = este periodo, gris = periodo anterior (validados para daltonismo). Una gráfica
   sin datos no se imprime.
+- **Embudos por cliente** (`/reportes/embudos/`, botón "Embudos" arriba): se diseña el customer
+  journey de cada cliente con sus etapas, en orden, y de dónde sale el número de cada una (alcance,
+  interacciones, visitas, clics, mensajes, ventas, pauta… o "se escribe a mano en cada reporte").
+  Hay plantillas para empezar (servicios con cita, negocio con local, tienda en línea). En el
+  reporte se elige el embudo (por omisión, el del mismo cliente) y aparecen casillas para las
+  etapas a mano. El PDF muestra el embudo con cuántas personas llegan a cada etapa, qué parte
+  pasa de una a otra (y cuánto pasaba antes), la variación contra el periodo anterior, dónde se
+  pierde más gente y de cada 100 (o 1,000) personas cuántas llegan al final. Sin embudo elegido
+  se usa el embudo general automático. (`reportes/embudos.js`, `reportes/vistas-embudos.js`)
 - **Pauta (Meta, TikTok y Google Ads)**: una fila por campaña con plataforma, nombre,
   objetivo, cifras y **foto del anuncio**. Se llena a mano o con **Importar campañas desde un
   archivo**: el CSV que exporta cada plataforma (columnas en español o inglés, con o sin filas

@@ -12,6 +12,8 @@ const postiz = require('./postiz');
 const { armar, mezclar } = require('./datos');
 const imagenes = require('./imagenes');
 const pautaCsv = require('./pauta-csv');
+const embudos = require('./embudos');
+const vistasEmbudos = require('./vistas-embudos');
 
 const PUERTO = Number(process.env.PORT || 8080);
 const DATOS = process.env.DATOS_REPORTES || '/data';
@@ -23,7 +25,25 @@ const ESTATICOS = {
   'reporte.css': 'text/css; charset=utf-8',
   'formulario.js': 'text/javascript; charset=utf-8',
   'reporte.js': 'text/javascript; charset=utf-8',
+  'embudo.js': 'text/javascript; charset=utf-8',
 };
+
+// El embudo de un reporte: el elegido, o si nunca se eligió, el del mismo cliente.
+function embudoDe(reporte, lista) {
+  const elegido = reporte.meta?.embudo;
+  if (elegido !== undefined) return lista.find((e) => e.id === elegido) || null;
+  const cliente = String(reporte.meta?.cliente || '').trim().toLowerCase();
+  return (cliente && lista.find((e) => String(e.cliente || '').trim().toLowerCase() === cliente)) || null;
+}
+
+function camposEmbudo(cuerpo) {
+  const etapas = [];
+  for (const [k, v] of cuerpo.entries()) {
+    const m = /^etapas\.(\d{1,2})\.(id|nombre|fuente|nota)$/.exec(k);
+    if (m) (etapas[Number(m[1])] ??= {})[m[2]] = v;
+  }
+  return { nombre: cuerpo.get('nombre'), cliente: cuerpo.get('cliente'), etapas: etapas.filter(Boolean) };
+}
 
 fs.mkdirSync(PAPELERA, { recursive: true });
 
@@ -140,6 +160,37 @@ async function manejar(req, res) {
     return imagenes.servir(DATOS, ruta.slice('/imagenes/'.length), res);
   }
 
+  // ---------- Diseñador de embudos ----------
+  if (ruta === '/embudos' || ruta === '/embudos/') {
+    if (req.method !== 'GET') return responder(res, 405, 'Método no permitido');
+    return responder(res, 200, vistasEmbudos.lista({ embudos: await embudos.todos(DATOS), mensaje: url.searchParams.get('m') }));
+  }
+  if (ruta === '/embudos/nuevo' && req.method === 'POST') {
+    const cuerpo = new URLSearchParams(await leerCuerpo(req));
+    const e = embudos.desdePlantilla(cuerpo.get('plantilla'), String(cuerpo.get('cliente') || '').trim().slice(0, 80));
+    await embudos.escribir(DATOS, e);
+    return redirigir(res, `${R}/embudos/${e.id}/editar`);
+  }
+  const me = /^\/embudos\/([a-f0-9]{16})\/(editar|guardar|borrar)$/.exec(ruta);
+  if (me) {
+    const [, idE, accionE] = me;
+    const embudo = await embudos.leer(DATOS, idE);
+    if (!embudo) return responder(res, 404, vistas.error({ titulo: 'No encontrado', mensaje: 'Ese embudo no existe o se borró.' }));
+    if (accionE === 'editar' && req.method === 'GET') {
+      const usos = (await todos()).filter((r) => r.meta?.embudo === idE).length;
+      return responder(res, 200, vistasEmbudos.editor({ embudo, usos, mensaje: url.searchParams.get('m') }));
+    }
+    if (req.method !== 'POST') return responder(res, 405, 'Método no permitido');
+    if (accionE === 'borrar') {
+      await embudos.borrar(DATOS, idE);
+      return redirigir(res, `${R}/embudos/?m=${encodeURIComponent('Embudo movido a la papelera.')}`);
+    }
+    const limpio = embudos.limpiar(camposEmbudo(new URLSearchParams(await leerCuerpo(req))), embudo);
+    await embudos.escribir(DATOS, limpio);
+    const aviso = limpio.etapas.length < 2 ? 'Guardado. Agrega al menos dos etapas para que el embudo se dibuje.' : 'Embudo guardado.';
+    return redirigir(res, `${R}/embudos/${idE}/editar?m=${encodeURIComponent(aviso)}`);
+  }
+
   if (ruta === '/' && req.method === 'GET') {
     return responder(res, 200, vistas.lista({ reportes: await todos(), mensaje: url.searchParams.get('m') }));
   }
@@ -164,11 +215,12 @@ async function manejar(req, res) {
     } catch (e) {
       errorCuentas = `No se pudieron leer las cuentas de Postiz (${e.message}).`;
     }
-    return responder(res, 200, vistas.formulario({ reporte, cuentas, errorCuentas, mensaje: url.searchParams.get('m') }));
+    const lista = await embudos.todos(DATOS);
+    return responder(res, 200, vistas.formulario({ reporte, cuentas, errorCuentas, mensaje: url.searchParams.get('m'), embudos: lista, embudo: embudoDe(reporte, lista) }));
   }
 
   if (accion === 'ver' && req.method === 'GET') {
-    return responder(res, 200, vistas.reporte({ reporte, otros: await todos() }));
+    return responder(res, 200, vistas.reporte({ reporte, otros: await todos(), embudo: embudoDe(reporte, await embudos.todos(DATOS)) }));
   }
 
   if (req.method !== 'POST') return responder(res, 405, 'Método no permitido');
@@ -182,7 +234,7 @@ async function manejar(req, res) {
     // Para el siguiente periodo se conservan cliente, cuentas, objetivos y metas.
     const kpis = (reporte.datos?.resumen?.kpis || []).map((k) => ({ kpi: k.kpi, meta: k.meta }));
     const copia = nuevo(usuario.email, {
-      meta: { cliente: reporte.meta?.cliente, redes: reporte.meta?.redes, cuentas: reporte.meta?.cuentas },
+      meta: { cliente: reporte.meta?.cliente, redes: reporte.meta?.redes, cuentas: reporte.meta?.cuentas, embudo: reporte.meta?.embudo },
       datos: { resumen: { kpis }, objetivos: reporte.datos?.objetivos, metodologia: { fuentes: reporte.datos?.metodologia?.fuentes } },
     });
     await escribir(copia);
@@ -212,6 +264,7 @@ async function manejar(req, res) {
 
     const enviado = armar(cuerpo.entries());
     reporte.meta = { ...(enviado.meta || {}), cuentas: enviado.meta?.cuentas || [] };
+    if (reporte.meta.embudo !== undefined && !embudos.idValido(reporte.meta.embudo)) reporte.meta.embudo = '';
     reporte.datos = enviado.datos || {};
     for (const c of reporte.datos.pauta?.campanas || []) {
       if (c.imagen && !imagenes.valida(c.imagen)) c.imagen = '';
