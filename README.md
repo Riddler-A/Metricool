@@ -51,7 +51,7 @@ Hestia, y dice qué falta. Lo que revisa:
   margen: por eso el paso 2 agrega swap.)
 - **Docker:** si no está, hay que instalarlo (paso 2).
 - **Puerto 3000:** lo usaban dos apps de prueba de PM2 ("alexisconsultor" y
-  "web-alexisconsultor"), que se detuvieron para dejarlo libre. Si `revisar.sh` dice que está
+  "web-alexisconsultor"), que se detuvieron (18-nov-2026, sin borrar sus archivos) para dejarlo libre. Si `revisar.sh` dice que está
   ocupado, revisa con `pm2 list` que sigan detenidas. Otra opción es elegir otro puerto libre
   (`ss -ltn`) y cambiar `POSTIZ_PORT` y la plantilla `NODEJS30xx` del paso 3 al mismo número.
 

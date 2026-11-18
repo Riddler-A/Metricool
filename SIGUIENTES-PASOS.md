@@ -60,12 +60,10 @@ abierto) con una capa visual de Prisma CN. Dirección final: https://redes.alexi
 
 1. **Docker no está instalado en el servidor.** Se instala con `root` (README, paso 2).
    El mismo bloque crea 4 GB de swap y deja PM2 arrancando solo.
-2. **Puerto 3000.** La plantilla de Hestia ya es `NODEJS3000` (18-nov-2026). El puerto lo
-   usaban dos apps de prueba de PM2: "alexisconsultor" ya está detenida (con permiso de
-   Alexis); "web-alexisconsultor" lo tomó después y falta el permiso de Alexis para
-   detenerla (`pm2 stop web-alexisconsultor && pm2 save`, sin borrar archivos). Mientras
-   siga encendida, `redes.alexisconsultor.com` muestra "NodeJS funcionando desde Hestia".
-   Falta también activar **HSTS** en Hestia.
+2. **HSTS en Hestia.** Plantilla `NODEJS3000` y puerto 3000 ya están listos (18-nov-2026):
+   las dos apps de prueba de PM2 que lo ocupaban ("alexisconsultor" y "web-alexisconsultor")
+   se detuvieron con permiso de Alexis, sin borrar sus archivos (`pm2 start <nombre>` las
+   vuelve a encender, pero chocarían con esta herramienta). Solo falta activar **HSTS** en Hestia.
 
 ## 4. Pasos cuando ya haya Docker (en este orden)
 
