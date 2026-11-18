@@ -188,7 +188,9 @@ sociales" de Prisma CN y se descarga en PDF con la identidad visual.
 2. **Traer datos de Postiz** llena lo marcado como *Postiz*: alcance, impresiones, likes,
    comentarios, guardados, compartidos, seguidores nuevos, mejores y peores publicaciones,
    rendimiento por formato, por pilar (las etiquetas de cada publicación) y por red. El
-   periodo anterior (misma duración, justo antes) se calcula solo.
+   periodo anterior (misma duración, justo antes) se calcula solo. También trae las cifras
+   **día por día** (alcance y seguidores nuevos) y el **ranking** de publicaciones con
+   miniatura, que alimentan las gráficas.
 3. Lo demás se llena a mano: KPI y metas, conversión, visitas al perfil, pauta,
    comunidad, audiencia, aprendizajes, plan y cada **Qué significa**.
 4. **Guardar y ver reporte** → revisa la lista "Antes de entregar" y usa **Descargar PDF**
@@ -204,6 +206,14 @@ Cómo funciona:
   borrar uno se mueve a `papelera/` dentro del mismo volumen.
 - La estructura del reporte (secciones, campos, tablas) está en `reportes/esquema.js`. Para
   agregar o quitar un campo basta con cambiarlo ahí; el formulario y el PDF se ajustan solos.
+- **Gráficas** (SVG dentro del reporte, sin librerías, `reportes/graficas.js` y
+  `reportes/visuales.js`): tarjetas de resumen con variación, historial de los últimos
+  periodos (sale de los reportes guardados del mismo cliente), embudo del periodo, alcance
+  por día con marcas de los días con publicación, seguidores nuevos por día, interacciones
+  contra el periodo anterior, ranking de publicaciones, alcance por formato y por red, y
+  tarjetas de pauta (CPM, CPC, CTR y costo por resultado se calculan solos). Colores:
+  terracota = este periodo, gris = periodo anterior (validados para daltonismo). Una gráfica
+  sin datos no se imprime.
 - Las secciones vacías no aparecen en el PDF, y la tasa de engagement se calcula siempre con
   la misma fórmula: interacciones ÷ alcance × 100.
 - Alcance e interacciones se suman **por publicación del periodo** (lo que entrega cada red).

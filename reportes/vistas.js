@@ -2,6 +2,7 @@
 
 const { SECCIONES, GLOSARIO, FORMULA_ENGAGEMENT } = require('./esquema');
 const calc = require('./calculos');
+const visuales = require('./visuales');
 
 const R = '/reportes';
 
@@ -156,6 +157,12 @@ ${puedeAgregar ? '<button type="button" class="boton terciario" data-agregar-fil
   return '';
 }
 
+function estadoSeries(series) {
+  if (!series?.importado) return '<p class="nota">Las gráficas diarias y el ranking de publicaciones aparecen al usar "Traer datos de Postiz".</p>';
+  const dias = (series.dias || []).filter((x) => x.alcance !== null || x.nuevos !== null).length;
+  return `<p class="nota">Datos para gráficas traídos el ${esc(fechaLarga(diaMexico(series.importado)))}: ${dias} días con cifras y ${(series.ranking || []).length} publicaciones en el ranking. Se actualizan cada vez que traes datos.</p>`;
+}
+
 function formulario({ reporte, cuentas, errorCuentas, mensaje }) {
   const m = reporte.meta || {};
   const d = reporte.datos || {};
@@ -226,6 +233,7 @@ function formulario({ reporte, cuentas, errorCuentas, mensaje }) {
       <label class="campo"><span>Fecha de entrega</span><input type="date" name="meta.entrega" value="${esc(m.entrega)}"></label>
       <div class="campo"><span>Periodo de comparación</span><p class="calculado">${ant ? esc(rango(ant.inicio, ant.fin)) : 'Se calcula al poner las fechas'}</p></div>
     </div>
+    ${estadoSeries(reporte.series)}
     <fieldset class="campo">
       <legend>Cuentas de Postiz que entran en el reporte</legend>
       <div class="opciones">${listaCuentas}</div>
@@ -294,16 +302,11 @@ function tablaLibre(campo, valor) {
 
   if (campo.especial === 'pauta') {
     const { filas: fs, total } = calc.resumenPauta(filas);
-    const cuerpo = fs
-      .map(
-        (f) =>
-          `<tr><th scope="row">${esc(f.campana)}</th><td>${esc(f.objetivo)}</td><td class="num">${esc(calc.mostrar(f.inversion, 'dinero'))}</td><td class="num">${esc(calc.mostrar(f.resultados, 'numero'))}</td><td class="num">${esc(calc.mostrar(f.costo, 'dinero'))}</td><td class="num">${esc(calc.mostrar(f.alcance, 'numero'))}</td><td class="num">${esc(calc.mostrar(f.ctr, 'porcentaje'))}</td></tr>`
-      )
-      .join('');
-    const pie = fs.length > 1
-      ? `<tfoot><tr><th scope="row">Total</th><td></td><td class="num">${esc(calc.mostrar(total.inversion, 'dinero'))}</td><td class="num">${esc(calc.mostrar(total.resultados, 'numero'))}</td><td class="num">${esc(calc.mostrar(total.costo, 'dinero'))}</td><td class="num">${esc(calc.mostrar(total.alcance, 'numero'))}</td><td></td></tr></tfoot>`
-      : '';
-    return `<table><thead><tr><th>Campaña</th><th>Objetivo</th><th class="num">Inversión (MXN)</th><th class="num">Resultados</th><th class="num">Costo por resultado (MXN)</th><th class="num">Alcance</th><th class="num">CTR (%)</th></tr></thead><tbody>${cuerpo}</tbody>${pie}</table>`;
+    const fila = (f, cab) =>
+      `<tr><th scope="row">${esc(cab)}</th><td>${esc(f.objetivo || '')}</td><td class="num">${esc(calc.mostrar(f.inversion, 'dinero'))}</td><td class="num">${esc(calc.mostrar(f.alcance, 'numero'))}</td><td class="num">${esc(calc.mostrar(f.clics, 'numero'))}</td><td class="num">${esc(calc.mostrar(f.resultados, 'numero'))}</td><td class="num">${esc(calc.mostrar(f.costo, 'dinero'))}</td><td class="num">${esc(calc.mostrar(f.ctr, 'porcentaje'))}</td></tr>`;
+    const cuerpo = fs.map((f) => fila(f, f.campana)).join('');
+    const pie = fs.length > 1 ? `<tfoot>${fila({ ...total, objetivo: '' }, 'Total')}</tfoot>` : '';
+    return `<table><thead><tr><th>Campaña</th><th>Objetivo</th><th class="num">Inversión (MXN)</th><th class="num">Alcance</th><th class="num">Clics</th><th class="num">Resultados</th><th class="num">Costo por resultado</th><th class="num">CTR</th></tr></thead><tbody>${cuerpo}</tbody>${pie}</table>`;
   }
 
   const columnas = campo.columnas.filter((c) => c.clave !== 'enlace');
@@ -335,11 +338,39 @@ function parrafo(texto, etiqueta, clase = '') {
 }
 
 // Cómo se imprime cada sección. Si una sección no tiene nada, no se imprime.
-function seccionReporte(s, d) {
+// Gráficas que se intercalan en el reporte, antes o después de ciertos campos.
+// Cada gráfica va con su título en un bloque que no se parte entre páginas.
+const bloque = (html) => (html ? `<div class="bloque-grafica">${html}</div>` : '');
+
+function graficasAntes(clave, d) {
+  if (clave === 'pauta.campanas') return bloque(visuales.tarjetasPauta(d));
+  return '';
+}
+
+function graficasDespues(clave, d, extra) {
+  return bloque(graficaDe(clave, d, extra));
+}
+
+function graficaDe(clave, d, extra) {
+  switch (clave) {
+    case 'resumen.frase': return visuales.tarjetasResumen(d);
+    case 'resumen.alerta': return visuales.historial(extra.reporte, extra.otros);
+    case 'embudo.frase': return visuales.graficaEmbudo(d);
+    case 'embudo.visibilidad': return visuales.graficasDiarias(extra.reporte.series);
+    case 'embudo.interaccion': return visuales.graficaInteraccion(d);
+    case 'porRed.filas': return visuales.graficaRedes(d);
+    case 'contenido.frase': return visuales.ranking(extra.reporte.series);
+    case 'contenido.formatos': return visuales.graficaFormatos(d);
+    default: return '';
+  }
+}
+
+function seccionReporte(s, d, extra = { reporte: {} }) {
   const v = d[s.clave] || {};
   let html = '';
   for (const c of s.campos) {
     const val = v[c.clave];
+    html += graficasAntes(`${s.clave}.${c.clave}`, d);
     if (c.tipo === 'metricas') html += tablaMetricas(c, val);
     else if (c.tipo === 'tabla') html += tablaLibre(c, val);
     else if (c.tipo === 'parrafo' || c.tipo === 'texto') {
@@ -349,6 +380,7 @@ function seccionReporte(s, d) {
       const etiqueta = esQue ? 'Qué significa' : esFrase ? '' : c.etiqueta;
       html += parrafo(val, etiqueta, esQue ? 'interpretacion' : esFrase ? 'entrada' : '');
     }
+    html += graficasDespues(`${s.clave}.${c.clave}`, d, extra);
   }
   if (s.clave === 'comunidad') {
     const li = [];
@@ -393,7 +425,7 @@ function pendientes(d) {
   return p;
 }
 
-function reporte({ reporte }) {
+function reporte({ reporte, otros = [] }) {
   const m = reporte.meta || {};
   const d = calc.completarCalculados(reporte.datos || {});
   const ant = calc.periodoAnterior(m.inicio, m.fin);
@@ -414,7 +446,7 @@ function reporte({ reporte }) {
   </dl>
 </section>`;
 
-  const cuerpo = SECCIONES.filter((s) => !s.anexo).map((s) => seccionReporte(s, d)).join('\n');
+  const cuerpo = SECCIONES.filter((s) => !s.anexo).map((s) => seccionReporte(s, d, { reporte, otros })).join('\n');
   const glosario = `<section class="seccion anexo"><h2>Anexo</h2><h3>Glosario</h3><table><thead><tr><th>Métrica</th><th>Qué mide, en palabras simples</th></tr></thead><tbody>${GLOSARIO.map(([a, b]) => `<tr><th scope="row">${esc(a)}</th><td>${esc(b)}</td></tr>`).join('')}</tbody></table>
 ${seccionReporte(SECCIONES.find((s) => s.anexo), d).replace('<section class="seccion"', '<div class="sub"').replace(/<\/section>$/, '</div>').replace('<h2>', '<h3>').replace('</h2>', '</h3>')}</section>`;
 

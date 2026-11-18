@@ -162,7 +162,7 @@ async function manejar(req, res) {
   }
 
   if (accion === 'ver' && req.method === 'GET') {
-    return responder(res, 200, vistas.reporte({ reporte }));
+    return responder(res, 200, vistas.reporte({ reporte, otros: await todos() }));
   }
 
   if (req.method !== 'POST') return responder(res, 405, 'Método no permitido');
@@ -195,6 +195,7 @@ async function manejar(req, res) {
       try {
         const traido = await postiz.traerDatos(cookie, reporte.meta);
         reporte.datos = mezclar(reporte.datos, traido.datos);
+        reporte.series = traido.series;
         reporte.avisos = traido.avisos;
         const hoy = vistas.diaMexico();
         reporte.datos.metodologia ??= {};

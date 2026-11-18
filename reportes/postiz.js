@@ -112,25 +112,27 @@ async function periodo(cookie, inicio, fin, idsCuentas) {
   }));
 }
 
-// Seguidores nuevos por día (las redes solo guardan los últimos ~30 días).
-async function seguidoresNuevos(cookie, idsCuentas, desde, hasta) {
-  const hoy = new Date();
-  const dias = Math.min(90, Math.ceil((hoy - Date.parse(`${desde}T00:00:00Z`)) / 86400000) + 1);
-  let total = null;
+// Métricas de la cuenta día por día (alcance y seguidores nuevos), sumando todas las
+// cuentas elegidas. Se pide una sola vez desde el inicio del periodo anterior.
+// Las redes solo guardan unos 30 a 90 días hacia atrás.
+async function seriesCuentas(cookie, idsCuentas, desde) {
+  const dias = Math.min(90, Math.ceil((Date.now() - Date.parse(`${desde}T00:00:00Z`)) / 86400000) + 1);
+  const series = [];
   for (const id of idsCuentas) {
     try {
-      const serie = await pedir(cookie, `/analytics/${encodeURIComponent(id)}?date=${dias}`);
-      const s = calc.sumarMetricas(
-        (Array.isArray(serie) ? serie : []).filter((m) => calc.claveDeEtiqueta(m.label) === 'nuevos'),
-        desde,
-        hasta
-      );
-      if (s.nuevos !== undefined) total = (total || 0) + s.nuevos;
+      const s = await pedir(cookie, `/analytics/${encodeURIComponent(id)}?date=${dias}`);
+      // Solo las métricas que vienen por día (las de total del periodo traen un solo punto).
+      series.push(...(Array.isArray(s) ? s : []).filter((m) => (m.data || []).length > 1));
     } catch (e) {
       if (e.sesion) throw e;
     }
   }
-  return total;
+  return series;
+}
+
+function sumaSerie(dias, clave) {
+  const vals = Object.values(dias).map((d) => d[clave]).filter((v) => v !== undefined);
+  return vals.length ? vals.reduce((a, b) => a + b, 0) : null;
 }
 
 // Junta todo lo que se puede llenar solo. Devuelve también avisos para el equipo.
@@ -142,8 +144,24 @@ async function traerDatos(cookie, { inicio, fin, cuentas: ids }) {
   const [actual, anterior] = [await periodo(cookie, inicio, fin, ids), await periodo(cookie, ant.inicio, ant.fin, ids)];
   const ra = calc.resumenPublicaciones(actual);
   const rb = calc.resumenPublicaciones(anterior);
-  const nuevosA = await seguidoresNuevos(cookie, ids, inicio, fin);
-  const nuevosB = await seguidoresNuevos(cookie, ids, ant.inicio, ant.fin);
+  const cuenta = await seriesCuentas(cookie, ids, ant.inicio);
+  const diasA = calc.seriePorDia(cuenta, inicio, fin);
+  const diasB = calc.seriePorDia(cuenta, ant.inicio, ant.fin);
+  const nuevosA = sumaSerie(diasA, 'nuevos');
+  const nuevosB = sumaSerie(diasB, 'nuevos');
+
+  // Serie diaria para las gráficas del periodo actual.
+  const publicadasPorDia = {};
+  for (const { post } of actual) {
+    const f = String(post.publishDate || '').slice(0, 10);
+    publicadasPorDia[f] = (publicadasPorDia[f] || 0) + 1;
+  }
+  const dias = calc.listaDias(inicio, fin).map((fecha) => ({
+    fecha,
+    alcance: diasA[fecha]?.alcance ?? null,
+    nuevos: diasA[fecha]?.nuevos ?? null,
+    publicaciones: publicadasPorDia[fecha] || 0,
+  }));
 
   const avisos = [];
   if (!ra.publicaciones) avisos.push('No hay publicaciones publicadas en el periodo para esas cuentas.');
@@ -157,6 +175,7 @@ async function traerDatos(cookie, { inicio, fin, cuentas: ids }) {
   return {
     anterior: ant,
     avisos,
+    series: { dias, ranking: ra.ranking, importado: new Date().toISOString() },
     datos: {
       embudo: {
         visibilidad: {

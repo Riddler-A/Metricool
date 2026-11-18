@@ -175,3 +175,53 @@ test('el formulario se vuelve objeto y la importación no borra lo escrito a man
   assert.equal(m.embudo.visibilidad.visitas.actual, '320');
   assert.equal(m.embudo.visibilidad.alcance.actual, '6500');
 });
+
+// ---------- Gráficas ----------
+
+test('las gráficas se dibujan con datos y se omiten sin ellos', () => {
+  const g = require('./graficas');
+  assert.match(g.barras({ filas: [{ etiqueta: 'A', valor: 10 }, { etiqueta: 'B', valor: 5 }], etiqueta: 'x' }), /<svg/);
+  assert.equal(g.barras({ filas: [{ etiqueta: 'A', valor: NaN }], etiqueta: 'x' }), '');
+  const emb = g.embudo({ etapas: [{ etiqueta: 'Vieron', valor: 1000 }, { etiqueta: 'Escribieron', valor: 50 }] });
+  assert.match(emb, /5% de la etapa anterior/);
+  assert.equal(g.lineaDiaria({ puntos: [{ fecha: '2026-10-01', valor: 3 }] }), '');
+  // Los textos van escapados: un nombre con < no rompe el SVG.
+  assert.match(g.barras({ filas: [{ etiqueta: '<b>', valor: 1 }], etiqueta: 'x' }), /&lt;b&gt;/);
+  assert.equal(g.techo === undefined, true); // detalle interno, no exportado
+});
+
+test('visuales: tarjetas, ranking e historial', () => {
+  const v = require('./visuales');
+  const d = { embudo: { visibilidad: { alcance: { actual: '6500', anterior: '5500' } }, interaccion: { likes: { actual: '300', anterior: '210' } } } };
+  const t = v.tarjetasResumen(d);
+  assert.match(t, /6,500/);
+  assert.match(t, /\+18\.2%/);
+  const rk = v.ranking({ ranking: [{ fecha: '2026-10-16', texto: 'Hola', enlace: 'javascript:alert(1)', miniatura: '', formato: 'Carrusel', red: 'Instagram', alcance: 10, engagement: 5 }] });
+  assert.doesNotMatch(rk, /javascript:/); // solo enlaces http(s)
+  const actual = { id: 'b', meta: { cliente: 'Café', inicio: '2026-10-01', fin: '2026-10-31' }, datos: d };
+  const previo = { id: 'a', meta: { cliente: 'café ', inicio: '2026-09-01', fin: '2026-09-30' }, datos: { embudo: { visibilidad: { alcance: { actual: '5500' } } } } };
+  assert.match(v.historial(actual, [previo, actual]), /Alcance de los últimos periodos/);
+  assert.equal(v.historial(actual, [actual]), '');
+});
+
+test('traerDatos entrega la serie diaria y el ranking', async (t) => {
+  const srv = simulador();
+  await new Promise((ok) => srv.listen(0, ok));
+  t.after(() => srv.close());
+  process.env.POSTIZ_INTERNO = `http://127.0.0.1:${srv.address().port}/api`;
+  delete require.cache[require.resolve('./postiz')];
+  const r = await require('./postiz').traerDatos('auth=ok', { inicio: '2026-10-01', fin: '2026-10-31', cuentas: ['ig1', 'fb1'] });
+  assert.equal(r.series.dias.length, 31);
+  assert.equal(r.series.dias.find((x) => x.fecha === '2026-10-05').nuevos, 14); // 7 por cuenta × 2
+  assert.equal(r.series.dias.find((x) => x.fecha === '2026-10-08').publicaciones, 1);
+  assert.equal(r.series.ranking[0].alcance, 3000);
+  assert.equal(r.series.ranking[0].formato, 'Carrusel');
+  assert.equal(r.series.ranking.length, 4);
+});
+
+test('pauta: CPM, CPC y CTR', () => {
+  const r = calc.resumenPauta([{ inversion: '315', impresiones: '53,390', clics: '239', resultados: '31' }]);
+  assert.equal(r.total.cpm, 5.9);
+  assert.equal(r.total.cpc, 1.32);
+  assert.equal(r.total.ctr, 0.45);
+});

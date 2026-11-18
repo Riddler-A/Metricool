@@ -132,3 +132,38 @@ tfoot th, tfoot td { font-weight: 700; background: var(--suave); }
   .seccion { padding: 28px 20px 8px; overflow-x: auto; }
   .cierre { margin: 24px 20px 0; }
 }
+
+/* ----- Gráficas, tarjetas y ranking ----- */
+.grafica { margin: 2mm 0 5mm; break-inside: avoid; }
+.grafica svg { display: block; width: 100%; height: auto; overflow: visible; font-family: 'Inter', system-ui, sans-serif; }
+.grafica path:hover, .grafica rect:hover, .grafica circle:hover { opacity: .8; }
+.g-etiqueta { font-size: 11px; fill: #000; }
+.g-valor { font-size: 11px; font-weight: 600; fill: #000; font-variant-numeric: tabular-nums; }
+.g-valor.tenue { font-weight: 500; fill: #4A4A4A; }
+.g-valor.chico { font-size: 10px; }
+.g-nota { font-weight: 400; fill: #4A4A4A; }
+.g-eje { font-size: 9.5px; fill: #6B6B6B; font-variant-numeric: tabular-nums; }
+.g-leyenda { font-size: 10.5px; fill: #4A4A4A; }
+.g-paso { font-size: 9.5px; fill: #4A4A4A; }
+.pie-grafica { font-size: 8.5pt; color: var(--gris-nota); margin: -2mm 0 4mm !important; }
+
+.tarjetas-datos { display: grid; grid-template-columns: repeat(auto-fill, minmax(38mm, 1fr)); gap: 3mm; margin: 2mm 0 6mm; }
+.tarjeta-dato {
+  background: #fff; border: 0.3mm solid var(--borde); border-radius: var(--radio);
+  padding: 3.5mm 4mm; display: flex; flex-direction: column; gap: 1mm; break-inside: avoid;
+  border-top: 1mm solid var(--dorado);
+}
+.td-etiqueta { font-size: 8.5pt; color: var(--gris-texto); }
+.td-valor { font-family: 'Fraunces', Georgia, serif; font-size: 20pt; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.td-var { font-size: 8pt; color: var(--gris-nota); }
+.td-var.sube { color: #2F6B3A; }
+.td-var.baja { color: #9B2C2C; }
+
+table.ranking { font-size: 8.5pt; }
+table.ranking td { vertical-align: middle; }
+table.ranking td.miniatura { width: 14mm; padding-right: 0; }
+table.ranking img, table.ranking .sin-miniatura {
+  display: block; width: 11mm; height: 14mm; object-fit: cover; border-radius: 2mm; background: var(--suave);
+}
+.rk-meta { font-size: 7.5pt; color: var(--gris-nota); }
+.bloque-grafica { break-inside: avoid; }

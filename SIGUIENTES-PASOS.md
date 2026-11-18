@@ -48,7 +48,7 @@ abierto) con una capa visual de Prisma CN. Dirección final: https://redes.alexi
       600, puerto 3010, versión v2.25.1). Le faltan solo las llaves de las redes.
 - [x] `scripts/revisar.sh` corrido en el servidor: solo marca las dos fallas de la
       sección 3 (Docker y la plantilla de Hestia).
-- [x] **Módulo de reportes** (17-nov-2026): genera el "Reporte de resultados de redes
+- [x] **Módulo de reportes** (17-nov-2026, con gráficas): genera el "Reporte de resultados de redes
       sociales" de Prisma CN con su identidad visual y lo descarga en PDF. Vive en
       `/reportes` (botón "Reportes" en el menú de Postiz), es la app `reportes/` en el
       contenedor `prisma-reportes` y usa la sesión de Postiz. Probado en local con datos de
@@ -137,6 +137,11 @@ Suite del mismo periodo. Puntos a revisar, porque solo se probaron con un Postiz
   `reportes/calculos.js` (Instagram: Reach, Views, Likes, Comments, Saves, Shares). Si una
   métrica sale vacía, revisar qué `label` entrega `GET /api/analytics/post/<id>`.
 - Que el formato (video, carrusel, imagen) salga bien: se lee de `GET /api/posts/<id>`.
+- Que las gráficas diarias salgan: usan las métricas con un punto por día de
+  `GET /api/analytics/<cuenta>?date=N` (Instagram: reach y follower_count). Si la gráfica
+  de alcance por día no aparece, revisar qué etiquetas trae esa respuesta.
+- Que las miniaturas del ranking carguen: salen de `image[0].thumbnail` o `image[0].path`
+  del post. Si la red guarda la imagen fuera de Postiz, puede verse el recuadro vacío.
 - Seguidores nuevos: la red solo guarda ~30 días; el periodo anterior suele ir a mano.
 Si algo no cuadra, corrígelo en `calculos.js` o `postiz.js`, agrega el caso a
 `reportes/pruebas.test.js` y vuelve a subir.

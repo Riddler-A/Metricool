@@ -89,27 +89,34 @@ function estadoKpi(actual, meta) {
 }
 
 // Costo por resultado y fila de totales de la pauta.
+// Indicadores de anuncios a partir de inversión, impresiones, clics y resultados.
+function indicadoresPauta({ inversion, impresiones, clics, resultados }) {
+  const inv = numero(inversion);
+  const imp = numero(impresiones);
+  const cl = numero(clics);
+  const res = numero(resultados);
+  return {
+    costo: inv !== null && res ? redondear(inv / res, 2) : null,
+    cpm: inv !== null && imp ? redondear((inv / imp) * 1000, 2) : null,
+    cpc: inv !== null && cl ? redondear(inv / cl, 2) : null,
+    ctr: cl !== null && imp ? redondear((cl / imp) * 100, 2) : null,
+  };
+}
+
 function resumenPauta(campanas) {
-  const filas = (campanas || []).map((c) => {
-    const inv = numero(c.inversion);
-    const res = numero(c.resultados);
-    return { ...c, costo: inv !== null && res ? redondear(inv / res, 2) : null };
-  });
+  const filas = (campanas || []).map((c) => ({ ...c, ...indicadoresPauta(c) }));
   const suma = (k) => {
     const vals = filas.map((f) => numero(f[k])).filter((v) => v !== null);
     return vals.length ? vals.reduce((s, v) => s + v, 0) : null;
   };
-  const inversion = suma('inversion');
-  const resultados = suma('resultados');
-  return {
-    filas,
-    total: {
-      inversion,
-      resultados,
-      alcance: suma('alcance'),
-      costo: inversion !== null && resultados ? redondear(inversion / resultados, 2) : null,
-    },
+  const total = {
+    inversion: suma('inversion'),
+    impresiones: suma('impresiones'),
+    alcance: suma('alcance'),
+    clics: suma('clics'),
+    resultados: suma('resultados'),
   };
+  return { filas, total: { ...total, ...indicadoresPauta(total) } };
 }
 
 // ---------- Datos de Postiz ----------
@@ -150,18 +157,58 @@ function sumarMetricas(analytics, desde, hasta) {
   return total;
 }
 
-// Formato de la publicación según sus archivos.
-function formatoPublicacion(post) {
+// Métricas por día (YYYY-MM-DD) entre dos fechas: { '2026-10-03': { alcance: 120, nuevos: 2 } }.
+function seriePorDia(analytics, desde, hasta) {
+  const dias = {};
+  for (const m of analytics || []) {
+    const clave = claveDeEtiqueta(m.label);
+    if (!clave) continue;
+    for (const p of m.data || []) {
+      const fecha = String(p.date || '').slice(0, 10);
+      if (fecha < desde || fecha > hasta) continue;
+      const n = numero(p.total);
+      if (n === null) continue;
+      dias[fecha] ??= {};
+      dias[fecha][clave] = (dias[fecha][clave] || 0) + n;
+    }
+  }
+  return dias;
+}
+
+// Todas las fechas del periodo, para que las gráficas no se salten días.
+function listaDias(inicio, fin) {
+  const dias = [];
+  for (let t = Date.parse(`${inicio}T00:00:00Z`); t <= Date.parse(`${fin}T00:00:00Z`) && dias.length < 400; t += 86400000) {
+    dias.push(new Date(t).toISOString().slice(0, 10));
+  }
+  return dias;
+}
+
+function listaMedios(post) {
   let medios = post.image;
   if (typeof medios === 'string') {
     try { medios = JSON.parse(medios); } catch { medios = []; }
   }
-  medios = Array.isArray(medios) ? medios : [];
-  const esVideo = (m) => /\.(mp4|mov|m4v|webm)(\?|$)/i.test(m?.path || m?.url || '');
+  return Array.isArray(medios) ? medios : [];
+}
+
+const esVideo = (m) => /\.(mp4|mov|m4v|webm)(\?|$)/i.test(m?.path || m?.url || '');
+
+// Formato de la publicación según sus archivos.
+function formatoPublicacion(post) {
+  const medios = listaMedios(post);
   if (medios.some(esVideo)) return 'video';
   if (medios.length > 1) return 'carrusel';
   if (medios.length === 1) return 'imagen';
   return 'texto';
+}
+
+// Miniatura para el ranking: la portada del video o la primera imagen.
+function miniatura(post) {
+  const m = listaMedios(post)[0];
+  if (!m) return '';
+  const url = m.thumbnail || (esVideo(m) ? '' : m.path || m.url || '');
+  return /^(https?:\/\/|\/)/.test(url) ? url : '';
 }
 
 const NOMBRE_FORMATO = { video: 'Reel / video', carrusel: 'Carrusel', imagen: 'Imagen estática', texto: 'Solo texto' };
@@ -187,6 +234,7 @@ function resumenPublicaciones(publicaciones) {
 
   const filas = conDatos.map(({ post, metricas }) => ({
     post,
+    metricas,
     formato: formatoPublicacion(post),
     alcance: metricas.alcance || 0,
     interacciones: interaccionesDe(metricas),
@@ -245,6 +293,26 @@ function resumenPublicaciones(publicaciones) {
     };
   });
 
+  // Ranking completo (hasta 10), ordenado por alcance, como el de Metricool.
+  const ranking = [...filas]
+    .sort((a, b) => b.alcance - a.alcance)
+    .slice(0, 10)
+    .map((f) => ({
+      fecha: String(f.post.publishDate || '').slice(0, 10),
+      texto: textoCorto(f.post.content, 90),
+      enlace: f.post.releaseURL || '',
+      miniatura: miniatura(f.post),
+      formato: NOMBRE_FORMATO[f.formato],
+      red: NOMBRE_RED[f.red] || f.red,
+      alcance: f.alcance,
+      impresiones: f.metricas.impresiones ?? null,
+      likes: f.metricas.likes ?? null,
+      comentarios: f.metricas.comentarios ?? null,
+      guardados: f.metricas.guardados ?? null,
+      compartidos: f.metricas.compartidos ?? null,
+      engagement: f.engagement === null ? null : redondear(f.engagement, 2),
+    }));
+
   return {
     totales: { ...tot, engagement },
     publicaciones: publicaciones.length,
@@ -254,6 +322,7 @@ function resumenPublicaciones(publicaciones) {
     formatos,
     pilares,
     redes,
+    ranking,
   };
 }
 
@@ -293,7 +362,10 @@ module.exports = {
   resumenPauta,
   claveDeEtiqueta,
   sumarMetricas,
+  seriePorDia,
+  listaDias,
   formatoPublicacion,
+  miniatura,
   resumenPublicaciones,
   periodoAnterior,
   textoCorto,
