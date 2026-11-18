@@ -60,7 +60,7 @@ NUESTRO=$(docker ps --filter name=prisma-branding --format '{{.Ports}}' 2>/dev/n
 if [ "$NUESTRO" -gt 0 ]; then
   ok "Puerto $PUERTO: lo usa esta herramienta"
 elif ss -ltn 2>/dev/null | grep -q "127.0.0.1:$PUERTO \|\*:$PUERTO \|0.0.0.0:$PUERTO "; then
-  falla "Puerto $PUERTO ocupado por otra app. Elige otro libre (ss -ltn) en .env y en la plantilla de Hestia"
+  falla "Puerto $PUERTO ocupado por otra app (revisa pm2 list: las apps de prueba deben estar detenidas). Si no, elige otro libre (ss -ltn) en .env y en la plantilla de Hestia"
 else
   ok "Puerto $PUERTO libre"
 fi
