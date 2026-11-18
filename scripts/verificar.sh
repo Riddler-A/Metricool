@@ -8,7 +8,7 @@ PUERTO=$(env_valor POSTIZ_PORT); PUERTO=${PUERTO:-3010}
 URL=$(env_valor POSTIZ_URL)
 
 echo; echo "Contenedores"
-for c in prisma-branding postiz postiz-postgres postiz-redis temporal temporal-postgresql temporal-elasticsearch temporal-ui; do
+for c in prisma-branding prisma-reportes postiz postiz-postgres postiz-redis temporal temporal-postgresql temporal-elasticsearch temporal-ui; do
   ESTADO=$(docker inspect -f '{{.State.Status}}' "$c" 2>/dev/null || echo "no existe")
   [ "$ESTADO" = "running" ] && ok "$c encendido" || falla "$c: $ESTADO"
 done

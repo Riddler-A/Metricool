@@ -1,0 +1,134 @@
+/* Reporte de resultados: en pantalla y en PDF (Imprimir → Guardar como PDF). */
+:root {
+  --hueso: #F6F4F0;
+  --negro: #000000;
+  --gris-texto: #4A4A4A;
+  --gris-nota: #6B6B6B;
+  --borde: #E2DED6;
+  --suave: #ECE9E3;
+  --dorado: #C49D3A;
+  --terracota: #A85C32;
+  --radio: 12px;
+}
+
+* { box-sizing: border-box; }
+html { background: var(--suave); }
+body {
+  margin: 0; font-family: 'Inter', system-ui, sans-serif; font-size: 11pt; line-height: 1.55;
+  color: var(--negro); background: var(--suave);
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+::selection { background: var(--dorado); color: var(--negro); }
+h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 600; line-height: 1.15; margin: 0; }
+a { color: var(--terracota); }
+
+/* ----- Barra de herramientas (no se imprime) ----- */
+.herramientas {
+  max-width: 210mm; margin: 24px auto 0; padding: 0 0 8px;
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+}
+.herramientas p { margin: 0; font-size: 13px; color: var(--gris-texto); flex-basis: 100%; }
+.boton {
+  display: inline-flex; align-items: center; min-height: 42px; padding: 0 18px; border-radius: var(--radio);
+  border: 1px solid var(--terracota); background: var(--terracota); color: #fff;
+  font: 600 14px/1 'Inter', sans-serif; text-decoration: none; cursor: pointer; transition: transform .15s ease;
+}
+.boton:hover { transform: translateY(-2px); }
+.boton.secundario { background: transparent; color: var(--negro); border-color: var(--negro); }
+.boton:focus-visible { outline: 3px solid var(--dorado); outline-offset: 2px; }
+.revision { flex-basis: 100%; padding: 12px 16px; border-radius: var(--radio); background: #FFF8E6; border: 1px solid #E9D8A6; font-size: 13px; }
+.revision ul { margin: 6px 0 0; padding-left: 20px; }
+.revision.ok { background: #fff; border-color: var(--borde); }
+
+/* ----- Documento ----- */
+.documento {
+  max-width: 210mm; margin: 12px auto 48px; background: var(--hueso);
+  box-shadow: 0 10px 40px rgba(0,0,0,.08); border-radius: var(--radio); overflow: hidden;
+}
+
+.portada {
+  background: var(--negro); color: #fff; min-height: 297mm; padding: 22mm 20mm;
+  display: flex; flex-direction: column; justify-content: space-between;
+  position: relative; overflow: hidden;
+}
+/* Corte diagonal inspirado en las caras del prisma */
+.portada::after {
+  content: ''; position: absolute; right: -40mm; bottom: -10mm; width: 60mm; height: 150mm;
+  border-left: 1.2mm solid var(--dorado); transform: skewX(-18deg); opacity: .5;
+}
+.portada-marca { display: flex; align-items: center; gap: 14px; }
+.portada-marca span { font-family: 'Fraunces', serif; font-weight: 700; font-size: 18pt; letter-spacing: .08em; }
+.sobretitulo { color: var(--dorado); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; font-size: 10pt; margin: 0 0 6mm; }
+.portada h1 { font-size: 40pt; font-weight: 700; color: #fff; max-width: 150mm; }
+.periodo { font-size: 15pt; color: #fff; margin: 5mm 0 0; }
+.portada-datos { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6mm 10mm; max-width: 140mm; position: relative; z-index: 1; }
+.portada-datos dt { color: var(--dorado); font-size: 8.5pt; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+.portada-datos dd { margin: 1mm 0 0; font-size: 11pt; }
+
+.seccion { padding: 14mm 20mm 4mm; }
+.seccion + .seccion { padding-top: 6mm; }
+.seccion h2 {
+  font-size: 22pt; margin-bottom: 4mm; padding-bottom: 3mm; border-bottom: 0.6mm solid var(--dorado);
+  break-after: avoid;
+}
+.seccion h3 { font-size: 13.5pt; margin: 7mm 0 3mm; break-after: avoid; }
+.seccion p { margin: 0 0 3mm; }
+.entrada { font-family: 'Fraunces', serif; font-size: 14pt; line-height: 1.4; }
+.interpretacion {
+  background: var(--suave); border-radius: var(--radio); padding: 3.5mm 5mm; margin: 3mm 0 5mm !important;
+  border-left: 1.2mm solid var(--dorado); break-inside: avoid;
+}
+
+table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 0 0 4mm; font-size: 9.5pt; break-inside: avoid; border: 0.3mm solid var(--borde); border-radius: var(--radio); overflow: hidden; background: #fff; }
+th, td { padding: 2.4mm 3mm; text-align: left; vertical-align: top; border-bottom: 0.3mm solid var(--borde); }
+tbody tr:last-child > *, tfoot tr:last-child > * { border-bottom: 0; }
+thead th { background: var(--suave); color: var(--gris-texto); font-weight: 600; font-size: 8.5pt; }
+tbody th { font-weight: 500; }
+tfoot th, tfoot td { font-weight: 700; background: var(--suave); }
+.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tenue { color: var(--gris-nota); }
+.sube { color: #2F6B3A; }
+.baja { color: #9B2C2C; }
+.estado { display: inline-block; white-space: nowrap; padding: 0.8mm 2.5mm; border-radius: var(--radio); font-size: 8.5pt; font-weight: 600; }
+.estado.ok { background: var(--dorado); color: var(--negro); }
+.estado.no { background: var(--suave); color: var(--negro); border: 0.3mm solid var(--gris-nota); }
+
+.comunidad { padding-left: 5mm; }
+.comunidad li { margin-bottom: 2mm; }
+.anexo .sub h3 { margin-top: 8mm; }
+
+.cierre {
+  display: flex; align-items: center; gap: 3mm; margin: 8mm 20mm 0; padding: 5mm 0 12mm;
+  border-top: 0.3mm solid var(--borde); color: var(--gris-nota); font-size: 8.5pt;
+}
+
+/* ----- Impresión ----- */
+@page {
+  size: A4;
+  margin: 14mm 0 16mm;
+  @bottom-right { content: 'Página ' counter(page) ' de ' counter(pages); font: 8pt 'Inter', sans-serif; color: #6B6B6B; margin-right: 20mm; }
+  @bottom-left { content: 'Prisma CN · Reporte de resultados de redes sociales'; font: 8pt 'Inter', sans-serif; color: #6B6B6B; margin-left: 20mm; }
+}
+@page :first { margin: 0; @bottom-right { content: none; } @bottom-left { content: none; } }
+
+@media print {
+  /* En papel, fondo blanco: los márgenes de la hoja no se pueden pintar y quedarían franjas. */
+  html, body, .documento { background: #fff; }
+  .no-imprimir { display: none !important; }
+  .documento { max-width: none; margin: 0; box-shadow: none; border-radius: 0; overflow: visible; }
+  .portada { break-after: page; height: 297mm; min-height: 0; }
+  .seccion { padding-top: 6mm; }
+  #r-embudo, .anexo { break-before: page; }
+  .seccion h2 { break-after: avoid; }
+  .seccion h3 + table, .seccion h2 + p + table { break-before: avoid; }
+  a { color: var(--negro); text-decoration: none; }
+}
+
+@media screen and (max-width: 820px) {
+  .herramientas, .documento { margin-left: 16px; margin-right: 16px; }
+  .portada { min-height: auto; padding: 32px 24px; gap: 40px; }
+  .portada h1 { font-size: 32px; }
+  .portada-datos { grid-template-columns: 1fr; }
+  .seccion { padding: 28px 20px 8px; overflow-x: auto; }
+  .cierre { margin: 24px 20px 0; }
+}

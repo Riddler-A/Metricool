@@ -196,6 +196,36 @@ services:
     networks:
       - temporal-network
 
+  # === Reportes de resultados con la identidad de Prisma CN (redes.alexisconsultor.com/reportes)
+  # Código en ./reportes (Node sin dependencias). Usa la sesión de Postiz: no necesita llaves.
+  reportes:
+    image: node:24-alpine
+    container_name: prisma-reportes
+    restart: always
+    user: 'node'
+    working_dir: /app
+    command: ['node', 'server.js']
+    environment:
+      PORT: '8080'
+      # /home/node ya pertenece al usuario node en la imagen; así el volumen nace con permisos de escritura
+      DATOS_REPORTES: /home/node
+      POSTIZ_INTERNO: 'http://postiz:5000/api'
+    volumes:
+      - ./reportes:/app:ro
+      - reportes-data:/home/node
+    networks:
+      - postiz-network
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    depends_on:
+      - postiz
+
 volumes:
   postgres-volume:
   postiz-redis-data:
@@ -203,6 +233,7 @@ volumes:
   postiz-uploads:
   temporal-es-data:
   temporal-postgres-data:
+  reportes-data:
 
 networks:
   postiz-network:

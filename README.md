@@ -25,6 +25,7 @@ navegador ──HTTPS──► nginx de Hestia (SSL Let's Encrypt, plantilla NOD
 | `hestia/` | Plantilla de proxy propia (`prisma-postiz.tpl` y `.stpl`). **Ya no hace falta**: el servidor nuevo usa la plantilla `NODEJS3010` de Hestia. Se conserva por si algún día se cambia de servidor. |
 | `proxy/` | Configuración del nginx de la capa de marca. Normalmente no se toca. |
 | `scripts/` | Instalación, revisión, verificación y respaldo en el servidor (ver paso 4). |
+| `reportes/` | **Reportes de resultados** con la identidad de Prisma CN, en `/reportes` (ver sección "Reportes"). |
 | `SIGUIENTES-PASOS.md` | **Estado del proyecto y plan** para continuar (pensado para que lo lea una IA). |
 | `temporal/` | Configuración de Temporal, el motor que ejecuta las publicaciones programadas. |
 
@@ -176,6 +177,40 @@ Para subir cambios de marca al servidor:
 ```bash
 git archive HEAD -- branding | ssh -i ~/.ssh/hestia_alexisconsultor alexisconsultorcom@185.137.122.204 'cd ~/apps/prisma-redes && tar -x'
 ```
+
+## Reportes de resultados
+
+En el menú de la izquierda de la herramienta hay un botón **Reportes** que abre
+https://redes.alexisconsultor.com/reportes. Ahí se arma el "Reporte de resultados de redes
+sociales" de Prisma CN y se descarga en PDF con la identidad visual.
+
+1. **Crear reporte** → cliente, fechas del periodo y cuentas de Postiz que entran.
+2. **Traer datos de Postiz** llena lo marcado como *Postiz*: alcance, impresiones, likes,
+   comentarios, guardados, compartidos, seguidores nuevos, mejores y peores publicaciones,
+   rendimiento por formato, por pilar (las etiquetas de cada publicación) y por red. El
+   periodo anterior (misma duración, justo antes) se calcula solo.
+3. Lo demás se llena a mano: KPI y metas, conversión, visitas al perfil, pauta,
+   comunidad, audiencia, aprendizajes, plan y cada **Qué significa**.
+4. **Guardar y ver reporte** → revisa la lista "Antes de entregar" y usa **Descargar PDF**
+   (en la ventana de impresión: *Guardar como PDF*, con *Gráficos de fondo* activado).
+5. Para el mes siguiente, **Duplicar** conserva cliente, cuentas, objetivos y KPI con sus metas.
+
+Cómo funciona:
+
+- Es una app aparte (`reportes/`, Node sin dependencias, contenedor `prisma-reportes`); no
+  modifica Postiz. Usa la **sesión de Postiz** de quien la abre: sin sesión, manda al inicio
+  de sesión, y no necesita llaves ni contraseñas nuevas.
+- Los reportes se guardan como archivos JSON en el volumen de Docker `reportes-data`. Al
+  borrar uno se mueve a `papelera/` dentro del mismo volumen.
+- La estructura del reporte (secciones, campos, tablas) está en `reportes/esquema.js`. Para
+  agregar o quitar un campo basta con cambiarlo ahí; el formulario y el PDF se ajustan solos.
+- Las secciones vacías no aparecen en el PDF, y la tasa de engagement se calcula siempre con
+  la misma fórmula: interacciones ÷ alcance × 100.
+- Alcance e interacciones se suman **por publicación del periodo** (lo que entrega cada red).
+  Si la red no da datos de una publicación, la app avisa.
+- Pruebas: `node --test reportes/pruebas.test.js` (usan un Postiz simulado).
+- Respaldo: `scripts/respaldo.sh` (el del cron diario) guarda también los reportes en
+  `~/respaldos-redes/reportes-<fecha>.tar.gz`.
 
 ## 6. Conectar Facebook e Instagram (app de Meta)
 

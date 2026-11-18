@@ -1,0 +1,123 @@
+/* Pantallas de trabajo (lista y formulario) con la identidad de Prisma CN. */
+:root {
+  --hueso: #F6F4F0;
+  --negro: #000000;
+  --gris-texto: #4A4A4A;
+  --gris-nota: #6B6B6B;
+  --borde: #E2DED6;
+  --suave: #ECE9E3;
+  --dorado: #C49D3A;
+  --terracota: #A85C32;
+  --terracota-oscuro: #8F4D29;
+  --radio: 12px;
+}
+
+* { box-sizing: border-box; }
+html { background: var(--hueso); }
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--negro);
+  background: var(--hueso);
+}
+::selection { background: var(--dorado); color: var(--negro); }
+h1, h2, h3, h4 { font-family: 'Fraunces', Georgia, serif; font-weight: 600; line-height: 1.2; margin: 0 0 .5em; }
+h1 { font-size: 34px; }
+h2 { font-size: 24px; }
+h4 { font-size: 17px; margin-top: 1.2em; }
+a { color: var(--terracota); }
+:focus-visible { outline: 3px solid var(--dorado); outline-offset: 2px; }
+
+.barra {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px; border-bottom: 1px solid var(--borde); background: var(--hueso);
+}
+.marca { display: flex; align-items: center; gap: 10px; color: var(--negro); text-decoration: none; font-family: 'Fraunces', serif; font-weight: 700; font-size: 18px; }
+.barra nav a { color: var(--gris-texto); text-decoration: none; }
+.barra nav a:hover { color: var(--negro); }
+.migas { max-width: 1040px; margin: 16px auto 0; padding: 0 24px; color: var(--gris-nota); font-size: 13px; }
+.migas a { color: var(--gris-texto); }
+
+.contenedor { max-width: 1040px; margin: 0 auto; padding: 24px 24px 120px; }
+.titular { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.nota, small { color: var(--gris-nota); font-size: 13px; display: block; }
+
+.boton {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 42px; padding: 0 18px; border-radius: var(--radio);
+  border: 1px solid var(--terracota); background: var(--terracota); color: #fff;
+  font: 600 14px/1 'Inter', sans-serif; text-decoration: none; cursor: pointer;
+  transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
+}
+.boton:hover { background: var(--terracota-oscuro); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,.08); }
+.boton.secundario { background: transparent; color: var(--negro); border-color: var(--negro); }
+.boton.secundario:hover { background: var(--suave); }
+.boton.terciario { background: transparent; color: var(--terracota); border-color: transparent; padding: 0 4px; min-height: 32px; }
+.boton.terciario:hover { transform: none; box-shadow: none; text-decoration: underline; }
+.boton.peligro { background: transparent; color: #9B2C2C; border-color: #9B2C2C; }
+
+.lista { list-style: none; padding: 0; margin: 24px 0; display: grid; gap: 12px; }
+.tarjeta {
+  display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 18px 20px; background: #fff; border: 1px solid var(--borde); border-radius: var(--radio);
+  border-left: 4px solid transparent; transition: border-color .2s ease, transform .2s ease;
+}
+.tarjeta:hover { border-left-color: var(--dorado); transform: translateY(-1px); }
+.tarjeta h3 { margin: 0; font-size: 19px; }
+.tarjeta p { margin: 2px 0 0; color: var(--gris-nota); font-size: 13px; }
+.tarjeta .acciones { display: flex; gap: 8px; flex-wrap: wrap; }
+.tarjeta form { margin: 0; }
+.vacio { padding: 32px; text-align: center; color: var(--gris-nota); border: 1px dashed var(--borde); border-radius: var(--radio); }
+
+.aviso { padding: 14px 16px; border-radius: var(--radio); background: #FFF8E6; border: 1px solid #E9D8A6; margin: 0 0 16px; }
+.aviso.exito { background: var(--suave); border-color: var(--borde); }
+.aviso ul { margin: 6px 0 0; padding-left: 20px; }
+
+.bloque {
+  background: #fff; border: 1px solid var(--borde); border-radius: var(--radio);
+  padding: 22px 24px; margin: 0 0 16px;
+}
+.bloque.interno { background: var(--suave); }
+.bloque.interno summary { cursor: pointer; font-weight: 600; }
+.bloque.interno ol { padding-left: 20px; }
+.etiqueta { font: 600 11px/1 'Inter', sans-serif; text-transform: uppercase; letter-spacing: .06em; color: var(--gris-texto); background: var(--suave); padding: 4px 8px; border-radius: var(--radio); vertical-align: middle; }
+
+.rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0 16px; }
+.campo { display: block; margin: 0 0 14px; border: 0; padding: 0; }
+.campo > span, .campo > legend { display: block; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+.calculado { margin: 0; padding: 10px 12px; background: var(--suave); border-radius: var(--radio); color: var(--gris-texto); }
+input[type=text], input[type=date], input[type=url], textarea {
+  width: 100%; padding: 10px 12px; border: 1px solid var(--borde); border-radius: var(--radio);
+  background: var(--hueso); font: inherit; color: var(--negro);
+}
+input:focus, textarea:focus { border-color: var(--terracota); background: #fff; outline: none; box-shadow: 0 0 0 3px rgba(196,157,58,.35); }
+textarea { resize: vertical; }
+.opciones { display: grid; gap: 6px; }
+.opcion { display: flex; gap: 8px; align-items: baseline; }
+.opcion small { display: inline; }
+
+.tabla-campo { overflow-x: auto; margin: 0 0 14px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 6px; border-bottom: 1px solid var(--borde); vertical-align: middle; }
+thead th { font-weight: 600; color: var(--gris-texto); font-size: 13px; white-space: nowrap; }
+tbody th { font-weight: 500; min-width: 200px; }
+td input { min-width: 110px; padding: 8px 10px; }
+em.auto { font-style: normal; font-size: 11px; font-weight: 600; color: var(--terracota); background: #F4E9E2; padding: 2px 6px; border-radius: 8px; margin-left: 4px; white-space: nowrap; }
+
+.acciones-fijas {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+  display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;
+  padding: 12px 24px; background: rgba(246,244,240,.96); border-top: 1px solid var(--borde);
+  backdrop-filter: blur(6px);
+}
+.zona-peligro { margin-top: 32px; }
+
+@media (max-width: 640px) {
+  .contenedor { padding: 16px 16px 160px; }
+  .bloque { padding: 18px 16px; }
+  h1 { font-size: 28px; }
+  .acciones-fijas { padding: 10px 16px; }
+  .acciones-fijas .boton { flex: 1 1 auto; }
+}

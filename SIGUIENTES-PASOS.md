@@ -48,6 +48,13 @@ abierto) con una capa visual de Prisma CN. Dirección final: https://redes.alexi
       600, puerto 3010, versión v2.25.1). Le faltan solo las llaves de las redes.
 - [x] `scripts/revisar.sh` corrido en el servidor: solo marca las dos fallas de la
       sección 3 (Docker y la plantilla de Hestia).
+- [x] **Módulo de reportes** (17-nov-2026): genera el "Reporte de resultados de redes
+      sociales" de Prisma CN con su identidad visual y lo descarga en PDF. Vive en
+      `/reportes` (botón "Reportes" en el menú de Postiz), es la app `reportes/` en el
+      contenedor `prisma-reportes` y usa la sesión de Postiz. Probado en local con datos de
+      ejemplo y 8 pruebas automáticas (`node --test reportes/pruebas.test.js`). Detalle en el README,
+      sección "Reportes de resultados". **Falta probar "Traer datos de Postiz" con cuentas
+      reales** (paso H).
 
 ## 3. Qué bloquea (lo hace Alexis, no la IA)
 
@@ -122,6 +129,18 @@ servidor (`nano .env`), y luego `docker compose up -d`. Depende de las preguntas
 Prisma CN, confirmar que sale a la hora y que la analítica carga. Correr una o dos marcas
 en paralelo con Metricool unas semanas antes de cancelarlo.
 
+**Paso H2. Probar los reportes con datos reales.** Con al menos una cuenta conectada y
+publicaciones de un mes: Reportes → Crear reporte → elegir la cuenta → "Traer datos de
+Postiz". Comparar alcance, likes, comentarios, guardados y compartidos contra Meta Business
+Suite del mismo periodo. Puntos a revisar, porque solo se probaron con un Postiz simulado:
+- Que las etiquetas de métricas que manda cada red coincidan con `ETIQUETAS` en
+  `reportes/calculos.js` (Instagram: Reach, Views, Likes, Comments, Saves, Shares). Si una
+  métrica sale vacía, revisar qué `label` entrega `GET /api/analytics/post/<id>`.
+- Que el formato (video, carrusel, imagen) salga bien: se lee de `GET /api/posts/<id>`.
+- Seguidores nuevos: la red solo guarda ~30 días; el periodo anterior suele ir a mano.
+Si algo no cuadra, corrígelo en `calculos.js` o `postiz.js`, agrega el caso a
+`reportes/pruebas.test.js` y vuelve a subir.
+
 **Paso I. Cerrar pendientes.** Actualizar `servidor.md` de la skill `prisma-cn` con la
 fila de `redes.` (carpeta `~/apps/prisma-redes`, Docker, puerto 3010 / NODEJS3010) y
 actualizar este archivo.
@@ -143,7 +162,14 @@ actualizar este archivo.
   nombres de clases y variables de Postiz. Tras actualizar, revisar a ojo el inicio de
   sesión y el calendario, en tema claro y oscuro.
 - **Los respaldos no incluyen los archivos subidos** (imágenes y videos), que viven en el
-  volumen de Docker `postiz-uploads`.
+  volumen de Docker `postiz-uploads`. Sí incluyen la base de datos y los reportes.
+- **Actualizar Postiz puede romper "Traer datos de Postiz"**, porque los reportes usan la
+  API interna de Postiz (`/api/posts`, `/api/analytics/...`, `/api/integrations/list`).
+  Tras actualizar, crear un reporte de prueba y traer datos. El botón "Reportes" del menú
+  se agrega con `branding/brand.js` copiando el botón "Media"; si desaparece, revisar ahí.
+- **Alcance del reporte = suma del alcance de cada publicación** del periodo. No es igual
+  al "alcance de la cuenta" de Meta (personas únicas): suele salir más alto. Está explicado
+  en la metodología del reporte; si Alexis prefiere el de la cuenta, se llena a mano.
 
 ## 6. Preguntas para Alexis
 
