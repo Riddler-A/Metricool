@@ -107,8 +107,7 @@ Este servidor no permite plantillas propias, así que se usa la de Hestia `NODEJ
 (manda el dominio a `127.0.0.1:3000`, el `POSTIZ_PORT` del `.env`). La carpeta `hestia/`
 no se usa aquí.
 
-En el panel de Hestia, con el usuario `alexisconsultorcom` (18-nov-2026: dominio, SSL y
-plantilla `NODEJS3000` ya están; falta activar HSTS):
+En el panel de Hestia, con el usuario `alexisconsultorcom` (18-nov-2026: todo esto ya está hecho):
 
 1. **Web → Agregar dominio web:** `redes.alexisconsultor.com`. Desactiva la redirección a "www".
 2. En **DNS**, confirma que el registro `redes` tipo A apunte a `185.137.122.204`.
