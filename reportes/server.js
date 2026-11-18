@@ -14,6 +14,9 @@ const imagenes = require('./imagenes');
 const pautaCsv = require('./pauta-csv');
 const embudos = require('./embudos');
 const vistasEmbudos = require('./vistas-embudos');
+const rutasExtra = require('./rutas-extra');
+const vistasExtra = require('./vistas-extra');
+const calc = require('./calculos');
 
 const PUERTO = Number(process.env.PORT || 8080);
 const DATOS = process.env.DATOS_REPORTES || '/data';
@@ -26,6 +29,7 @@ const ESTATICOS = {
   'formulario.js': 'text/javascript; charset=utf-8',
   'reporte.js': 'text/javascript; charset=utf-8',
   'embudo.js': 'text/javascript; charset=utf-8',
+  'extra.js': 'text/javascript; charset=utf-8',
 };
 
 // El embudo de un reporte: el elegido, o si nunca se eligió, el del mismo cliente.
@@ -103,13 +107,13 @@ function redirigir(res, destino) {
   res.end();
 }
 
-function leerCuerpo(req) {
+function leerCuerpo(req, maximo = MAX_CUERPO) {
   return new Promise((ok, mal) => {
     let tam = 0;
     const partes = [];
     req.on('data', (c) => {
       tam += c.length;
-      if (tam > MAX_CUERPO) {
+      if (tam > maximo) {
         mal(Object.assign(new Error('Formulario demasiado grande'), { estado: 413 }));
         req.destroy();
       } else partes.push(c);
@@ -133,6 +137,13 @@ function mismoOrigen(req) {
 async function manejar(req, res) {
   const url = new URL(req.url, 'http://local');
   let ruta = url.pathname;
+  const ayudas = { DATOS, responder, redirigir, leerCuerpo, mismoOrigen, todos };
+
+  // Públicas: enlaces rastreables (/r/…) y registro del cliente (/c/…). No piden sesión.
+  if (/^\/[rc]\//.test(ruta)) {
+    if (await rutasExtra.publicas(req, res, url, ayudas)) return;
+    return responder(res, 404, vistasExtra.noEncontrado());
+  }
   if (!ruta.startsWith(R)) return responder(res, 404, 'No encontrado');
   ruta = ruta.slice(R.length) || '/';
 
@@ -159,6 +170,8 @@ async function manejar(req, res) {
   if (ruta.startsWith('/imagenes/') && req.method === 'GET') {
     return imagenes.servir(DATOS, ruta.slice('/imagenes/'.length), res);
   }
+
+  if (/^\/(enlaces|clientes)(\/|$)/.test(ruta) && (await rutasExtra.equipo(req, res, url, ruta, { ...ayudas, usuario }))) return;
 
   // ---------- Diseñador de embudos ----------
   if (ruta === '/embudos' || ruta === '/embudos/') {
@@ -289,24 +302,51 @@ async function manejar(req, res) {
     }
 
     if (que === 'importar') {
-      try {
-        const traido = await postiz.traerDatos(cookie, reporte.meta);
-        reporte.datos = mezclar(reporte.datos, traido.datos);
-        reporte.series = traido.series;
-        reporte.avisos.push(...traido.avisos);
-        const hoy = vistas.diaMexico();
-        reporte.datos.metodologia ??= {};
-        reporte.datos.metodologia.fecha = hoy;
-        if (!reporte.datos.metodologia.fuentes)
-          reporte.datos.metodologia.fuentes = 'Estadísticas de cada red obtenidas a través de Postiz';
-        if (!reporte.datos.metodologia.notas)
-          reporte.datos.metodologia.notas =
-            'Alcance, impresiones e interacciones son la suma de las publicaciones del periodo (una persona puede contarse en más de una publicación).';
-        mensaje = 'Datos de Postiz actualizados. Revisa los avisos y completa lo que falta a mano.';
-      } catch (e) {
-        if (e.sesion) return redirigir(res, `/auth/login?returnUrl=${encodeURIComponent(`${R}/${id}/editar`)}`);
-        reporte.avisos.push(`No se pudieron traer los datos: ${e.message}`);
-        mensaje = 'Guardado, pero no se pudieron traer los datos de Postiz.';
+      const ant = calc.periodoAnterior(reporte.meta.inicio, reporte.meta.fin);
+      const traidos = [];
+      if (!ant) {
+        reporte.avisos.push('Pon las fechas del periodo para poder traer datos.');
+      } else {
+        // 1) Postiz (solo si se eligieron cuentas).
+        if (reporte.meta.cuentas?.length) {
+          try {
+            const traido = await postiz.traerDatos(cookie, reporte.meta);
+            reporte.datos = mezclar(reporte.datos, traido.datos);
+            reporte.series = { ...(reporte.series || {}), ...traido.series };
+            reporte.avisos.push(...traido.avisos);
+            traidos.push('Postiz');
+            reporte.datos.metodologia ??= {};
+            if (!reporte.datos.metodologia.notas)
+              reporte.datos.metodologia.notas =
+                'Alcance, impresiones e interacciones son la suma de las publicaciones del periodo (una persona puede contarse en más de una publicación).';
+          } catch (e) {
+            if (e.sesion) return redirigir(res, `/auth/login?returnUrl=${encodeURIComponent(`${R}/${id}/editar`)}`);
+            reporte.avisos.push(`No se pudieron traer los datos de Postiz: ${e.message}`);
+          }
+        }
+        // 2) Enlaces rastreables y registro del cliente (por nombre de cliente).
+        const extra = await rutasExtra.datosDelCliente(DATOS, reporte.meta.cliente, reporte.meta.inicio, reporte.meta.fin, ant);
+        if (extra.hayAlgo) {
+          reporte.datos = mezclar(reporte.datos, { embudo: extra.datos.embudo });
+          // Las etapas "a mano" del embudo: se ponen tal cual, sin borrar lo escrito si viene vacío.
+          for (const [etapa, v] of Object.entries(extra.datos.embudoEtapas || {})) {
+            reporte.datos.embudoEtapas ??= {};
+            reporte.datos.embudoEtapas[etapa] ??= {};
+            for (const p of ['actual', 'anterior']) if (v[p] !== '') reporte.datos.embudoEtapas[etapa][p] = v[p];
+          }
+          reporte.series = { ...(reporte.series || {}), enlaces: extra.resumenEnlaces };
+          reporte.avisos.push(...extra.avisos);
+          traidos.push('enlaces y registro del cliente');
+        }
+        if (traidos.length) {
+          reporte.datos.metodologia ??= {};
+          reporte.datos.metodologia.fecha = vistas.diaMexico();
+          if (!reporte.datos.metodologia.fuentes)
+            reporte.datos.metodologia.fuentes = `Estadísticas de cada red vía Postiz, enlaces rastreables de Prisma CN y registro del negocio`;
+          mensaje = `Datos actualizados (${traidos.join(' + ')}). Revisa los avisos y completa lo que falta a mano.`;
+        } else if (!reporte.avisos.length) {
+          reporte.avisos.push('No hay de dónde traer datos: elige cuentas de Postiz, crea enlaces rastreables o un registro para este cliente.');
+        }
       }
     }
 

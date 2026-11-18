@@ -102,10 +102,11 @@ const SECCIONES = [
         titulo: 'Conversión: ¿se acercaron a comprar?',
         columnas: COLUMNAS_PERIODO,
         filas: [
-          { clave: 'clics', etiqueta: 'Clics al link del perfil o publicación', formato: 'numero' },
+          { clave: 'clics', etiqueta: 'Clics al link del perfil o publicación', formato: 'numero', auto: true },
+          { clave: 'abrieronWhatsapp', etiqueta: 'Abrieron el chat de WhatsApp (enlace rastreable)', formato: 'numero', auto: true },
           { clave: 'dm', etiqueta: 'Mensajes directos (DM)', formato: 'numero' },
           { clave: 'whatsapp', etiqueta: 'Conversaciones por WhatsApp', formato: 'numero' },
-          { clave: 'ventas', etiqueta: 'Citas, cotizaciones o ventas reportadas por el negocio', formato: 'numero' },
+          { clave: 'ventas', etiqueta: 'Citas, cotizaciones o ventas reportadas por el negocio', formato: 'numero', auto: true },
         ],
       },
       { tipo: 'parrafo', clave: 'conversionQue', etiqueta: 'Qué significa (conversión)' },

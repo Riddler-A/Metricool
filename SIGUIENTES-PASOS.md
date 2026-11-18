@@ -147,6 +147,12 @@ Suite del mismo periodo. Puntos a revisar, porque solo se probaron con un Postiz
 Si algo no cuadra, corrígelo en `calculos.js` o `postiz.js`, agrega el caso a
 `reportes/pruebas.test.js` y vuelve a subir.
 
+**Paso H2c. Enlaces rastreables y registro del cliente.** Con Alexis: crear los enlaces de
+cada cliente (uno por red y por anuncio) y cambiar los links de las biografías y anuncios por
+los cortos; crear el registro de cada cliente y mandarle su enlace privado (hay botón "Copiar
+mensaje para WhatsApp"). Comprobar en el servidor que `/r/…` redirige y cuenta, y que `/c/…`
+abre sin sesión. Las rutas `/r/` y `/c/` las atiende el nginx de la capa de marca.
+
 **Paso H2b. Diseñar los embudos reales.** Con Alexis, en Reportes → Embudos, crear el
 embudo de cada cliente (empezar con una plantilla y ajustar etapas). Preguntarle qué etapas
 mide cada negocio fuera de redes (citas, reservas, ventas en tienda) y quién le pasa esos

@@ -63,7 +63,7 @@ ${cuerpo}
 function encabezado(subtitulo) {
   return `<header class="barra">
   <a class="marca" href="${R}/"><img src="/prisma-brand/simbolo-negro.png" alt="" width="28" height="29"><span>Prisma CN · Reportes</span></a>
-  <nav><a href="${R}/">Reportes</a><a href="${R}/embudos/">Embudos</a><a href="/launches">Volver a Postiz</a></nav>
+  <nav><a href="${R}/">Reportes</a><a href="${R}/embudos/">Embudos</a><a href="${R}/enlaces/">Enlaces</a><a href="${R}/clientes/">Registro de clientes</a><a href="/launches">Volver a Postiz</a></nav>
 </header>${subtitulo ? `<p class="migas">${subtitulo}</p>` : ''}`;
 }
 
@@ -255,7 +255,7 @@ function formulario({ reporte, cuentas, errorCuentas, mensaje, embudos: listaEmb
     <summary>Uso interno: cómo llenar el reporte</summary>
     <ol>
       <li>Un reporte por cliente y por periodo. Para el mes siguiente usa <strong>Duplicar</strong> en la lista.</li>
-      <li>Lo marcado como <em class="auto">Postiz</em> se llena con <strong>Traer datos de Postiz</strong>; puedes corregirlo a mano.</li>
+      <li>Lo marcado como <em class="auto">Postiz</em> se llena con <strong>Traer datos</strong> (Postiz, enlaces rastreables y registro del cliente); puedes corregirlo a mano.</li>
       <li>Las secciones opcionales o vacías <strong>no aparecen</strong> en el reporte. Nunca se entrega una sección vacía.</li>
       <li>Cada tabla lleva su <strong>Qué significa</strong>. Sin interpretación, el dato no se entrega: la vista previa te avisa cuáles faltan.</li>
       <li>Que quien dirige el negocio entienda el resumen ejecutivo en 2 minutos.</li>
@@ -264,11 +264,12 @@ function formulario({ reporte, cuentas, errorCuentas, mensaje, embudos: listaEmb
     <table>
       <thead><tr><th>Dato</th><th>Quién lo obtiene</th><th>De dónde sale</th></tr></thead>
       <tbody>
-        <tr><td>Alcance, impresiones, likes, comentarios, guardados, compartidos, mejores publicaciones</td><td>Automático</td><td>Postiz (botón "Traer datos de Postiz")</td></tr>
-        <tr><td>Visitas al perfil, clics al link, seguidores totales</td><td>Alexis → a mano</td><td>Meta Business Suite / estadísticas de cada red</td></tr>
+        <tr><td>Alcance, impresiones, likes, comentarios, guardados, compartidos, mejores publicaciones</td><td>Automático</td><td>Postiz (botón "Traer datos")</td></tr>
+        <tr><td>Clics al link y personas que abrieron WhatsApp</td><td>Automático</td><td>Enlaces rastreables del cliente (menú Enlaces)</td></tr>
+        <tr><td>Citas, ventas o reservas que llegaron por redes, y las etapas "a mano" del embudo</td><td>Automático (lo escribe el cliente)</td><td>Registro del cliente (menú Registro de clientes)</td></tr>
+        <tr><td>Visitas al perfil y seguidores totales</td><td>Alexis → a mano</td><td>Meta Business Suite / estadísticas de cada red</td></tr>
         <tr><td>Mensajes recibidos y tiempo de respuesta</td><td>Alexis → a mano</td><td>Bandeja de Meta Business Suite / WhatsApp Business</td></tr>
-        <tr><td>Inversión y resultados de pauta</td><td>Alexis → a mano</td><td>Administrador de anuncios</td></tr>
-        <tr><td>Leads, citas o ventas que llegaron por redes</td><td>Cliente → Alexis</td><td>Registro del cliente (se pide cada cierre de mes)</td></tr>
+        <tr><td>Inversión y resultados de pauta</td><td>Alexis → archivo CSV o a mano</td><td>Meta, TikTok o Google Ads (Importar campañas)</td></tr>
         <tr><td>Objetivos y metas del periodo</td><td>Alexis</td><td>Propuesta o plan acordado con el cliente</td></tr>
       </tbody>
     </table>
@@ -294,7 +295,7 @@ function formulario({ reporte, cuentas, errorCuentas, mensaje, embudos: listaEmb
   ${secciones}
 
   <div class="acciones-fijas">
-    <button class="boton secundario" type="submit" name="accion" value="importar">Traer datos de Postiz</button>
+    <button class="boton secundario" type="submit" name="accion" value="importar">Traer datos</button>
     <button class="boton secundario" type="submit" name="accion" value="guardar">Guardar</button>
     <button class="boton" type="submit" name="accion" value="ver">Guardar y ver reporte</button>
   </div>
@@ -404,6 +405,7 @@ function graficaDe(clave, d, extra) {
     case 'embudo.frase': return extra.embudo ? visuales.embudoCliente(extra.embudo, d) : visuales.graficaEmbudo(d);
     case 'embudo.visibilidad': return visuales.graficasDiarias(extra.reporte.series);
     case 'embudo.interaccion': return visuales.graficaInteraccion(d);
+    case 'embudo.conversion': return visuales.tablaEnlaces(extra.reporte.series);
     case 'porRed.filas': return visuales.graficaRedes(d);
     case 'contenido.frase': return visuales.ranking(extra.reporte.series);
     case 'contenido.formatos': return visuales.graficaFormatos(d);

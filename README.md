@@ -214,6 +214,18 @@ Cómo funciona:
   tarjetas de pauta (CPM, CPC, CTR y costo por resultado se calculan solos). Colores:
   terracota = este periodo, gris = periodo anterior (validados para daltonismo). Una gráfica
   sin datos no se imprime.
+- **Enlaces rastreables** (menú "Enlaces"): enlaces cortos `redes.alexisconsultor.com/r/<nombre>`
+  que cuentan cada clic y mandan a la persona a una página o a un chat de WhatsApp con mensaje ya
+  escrito. Uno por red o por anuncio para saber de dónde viene cada clic. No se guarda nada de la
+  persona (ni IP): solo clics por día y una estimación de personas distintas. No cuentan las
+  vistas previas de redes ni los robots. "Traer datos" llena *Clics al link* y *Abrieron el chat
+  de WhatsApp* del reporte y pone la tabla de clics por enlace. (`reportes/enlaces.js`)
+- **Registro del cliente** (menú "Registro de clientes"): cada cliente recibe un enlace privado
+  `redes.alexisconsultor.com/c/<llave>` (llave al azar de 128 bits, sin usuario ni contraseña) donde
+  escribe cuántas citas, ventas o reservas llegaron por redes, más las etapas "a mano" de su
+  embudo. "Traer datos" las suma al periodo del reporte (si un registro cruza el inicio o fin del
+  periodo, se reparte por días). Si la llave se comparte por error, "Cambiar enlace" la invalida.
+  La página no aparece en buscadores y limita los envíos por IP. (`reportes/clientes.js`)
 - **Embudos por cliente** (`/reportes/embudos/`, botón "Embudos" arriba): se diseña el customer
   journey de cada cliente con sus etapas, en orden, y de dónde sale el número de cada una (alcance,
   interacciones, visitas, clics, mensajes, ventas, pauta… o "se escribe a mano en cada reporte").

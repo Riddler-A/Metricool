@@ -29,6 +29,7 @@ const FUENTES = {
   nuevos: ['Seguidores nuevos', 'Redes', (d, p) => n(d.embudo?.visibilidad?.nuevos?.[p])],
   visitas: ['Visitas al perfil', 'Redes', (d, p) => n(d.embudo?.visibilidad?.visitas?.[p])],
   clics: ['Clics al link', 'Conversión', (d, p) => n(d.embudo?.conversion?.clics?.[p])],
+  abrieronWhatsapp: ['Abrieron el chat de WhatsApp (enlace rastreable)', 'Conversión', (d, p) => n(d.embudo?.conversion?.abrieronWhatsapp?.[p])],
   dm: ['Mensajes directos (DM)', 'Conversión', (d, p) => n(d.embudo?.conversion?.dm?.[p])],
   whatsapp: ['Conversaciones por WhatsApp', 'Conversión', (d, p) => n(d.embudo?.conversion?.whatsapp?.[p])],
   mensajes: ['Mensajes (DM + WhatsApp)', 'Conversión', (d, p) => suma([n(d.embudo?.conversion?.dm?.[p]), n(d.embudo?.conversion?.whatsapp?.[p])])],

@@ -374,3 +374,93 @@ test('embudo en el reporte: gráfica, tabla e ideas', () => {
   const vacio = v.embudoCliente(embudo, {});
   assert.match(vacio, /Faltan cifras/);
 });
+
+// ---------- Enlaces rastreables ----------
+
+test('enlaces: nombres, destinos y WhatsApp', () => {
+  const e = require('./enlaces');
+  assert.equal(e.aSlug('Café Norte · Menú de temporada'), 'cafe-norte-menu-de-temporada');
+  assert.equal(e.slugValido('cafe-menu'), true);
+  assert.equal(e.slugValido('Cafe'), false);
+  assert.equal(e.slugValido('../etc'), false);
+  assert.equal(e.destinoValido('https://alexisconsultor.com/menu'), true);
+  assert.equal(e.destinoValido('javascript:alert(1)'), false);
+  assert.equal(e.destinoValido('data:text/html,hola'), false);
+  assert.equal(e.whatsapp('33 2846 7395', 'Hola, quiero informes'), 'https://wa.me/523328467395?text=Hola%2C%20quiero%20informes');
+  assert.equal(e.whatsapp('+1 555 123 4567', ''), 'https://wa.me/15551234567');
+  assert.equal(e.whatsapp('123', 'x'), null);
+});
+
+test('enlaces: cuenta clics de personas, no de robots ni vistas previas', async (t) => {
+  const os = require('node:os');
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const e = require('./enlaces');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prisma-enl-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  await e.guardar(dir, { slug: 'cafe-menu', cliente: 'Café', nombre: 'Menú', tipo: 'web', destino: 'https://ejemplo.com/menu', clics: {}, unicos: {} });
+  const req = (ua, ip = '1.1.1.1', extra = {}) => ({ method: 'GET', headers: { 'user-agent': ua, 'x-real-ip': ip, ...extra }, socket: {} });
+  const chrome = 'Mozilla/5.0 (iPhone) AppleWebKit Safari';
+  assert.equal(await e.registrarClic(dir, 'cafe-menu', req(chrome)), 'https://ejemplo.com/menu');
+  await e.registrarClic(dir, 'cafe-menu', req(chrome)); // misma persona
+  await e.registrarClic(dir, 'cafe-menu', req(chrome, '2.2.2.2')); // otra persona
+  await e.registrarClic(dir, 'cafe-menu', req('facebookexternalhit/1.1')); // vista previa de Facebook
+  await e.registrarClic(dir, 'cafe-menu', req(chrome, '3.3.3.3', { purpose: 'prefetch' }));
+  await Promise.all([1, 2, 3].map(() => e.registrarClic(dir, 'cafe-menu', req(chrome, '4.4.4.4')))); // al mismo tiempo
+  const enlace = await e.leer(dir, 'cafe-menu');
+  const hoy = e.diaMexico();
+  assert.equal(enlace.clics[hoy], 6);
+  assert.equal(enlace.unicos[hoy], 3);
+  assert.equal(e.clicsEntre(enlace, hoy, hoy), 6);
+  assert.equal(await e.registrarClic(dir, 'no-existe', req(chrome)), null);
+  await e.guardar(dir, { ...enlace, pausado: true });
+  assert.equal(await e.registrarClic(dir, 'cafe-menu', req(chrome)), null);
+});
+
+// ---------- Registro del cliente ----------
+
+test('registro del cliente: valida lo que envía y reparte por periodo', () => {
+  const c = require('./clientes');
+  const campos = c.campos({ etapas: [{ id: 'eabc1234', nombre: 'Reservaron mesa', fuente: 'manual' }, { id: 'e0000000', nombre: 'Nos vieron', fuente: 'alcance' }] });
+  assert.deepEqual(campos.map((x) => x.id), ['ventas', 'eabc1234']);
+  assert.throws(() => c.limpiarRegistro({ desde: '2026-10-10', hasta: '2026-10-01', ventas: '3' }, campos), /antes/);
+  assert.throws(() => c.limpiarRegistro({ desde: '2026-10-01', hasta: '2026-10-07', ventas: '-2' }, campos), /número entero/);
+  assert.throws(() => c.limpiarRegistro({ desde: '2026-10-01', hasta: '2026-10-07' }, campos), /al menos un número/);
+  assert.throws(() => c.limpiarRegistro({ desde: '2026-01-01', hasta: '2026-06-30', ventas: '1' }, campos), /2 meses/);
+  const r1 = c.limpiarRegistro({ desde: '2026-10-01', hasta: '2026-10-07', ventas: '7', eabc1234: '10', otro: '99', nota: 'Buena semana' }, campos);
+  assert.deepEqual(r1.valores, { ventas: 7, eabc1234: 10 }); // ignora campos que no existen
+  // Semana que cruza el fin de mes: 2 de 7 días caen en octubre.
+  const r2 = c.limpiarRegistro({ desde: '2026-10-30', hasta: '2026-11-05', ventas: '14' }, campos);
+  let cliente = c.agregarRegistro(c.nuevo('Café'), r1);
+  cliente = c.agregarRegistro(cliente, r2);
+  const oct = c.sumaEntre(cliente, '2026-10-01', '2026-10-31');
+  assert.deepEqual(oct.total, { ventas: 11, eabc1234: 10 }); // 7 + 14 × 2/7
+  assert.equal(oct.registros, 2);
+  assert.match(cliente.llave, /^[a-f0-9]{32}$/);
+  assert.notEqual(c.nuevaLlave(cliente).llave, cliente.llave);
+});
+
+test('Traer datos del cliente: clics de enlaces y registro al reporte', async (t) => {
+  const os = require('node:os');
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const e = require('./enlaces');
+  const c = require('./clientes');
+  const { datosDelCliente } = require('./rutas-extra');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prisma-cli-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  await e.guardar(dir, { slug: 'cafe-menu', cliente: 'Café Norte', nombre: 'Menú', tipo: 'web', destino: 'https://x.com', clics: { '2026-10-05': 40, '2026-09-20': 25 }, unicos: { '2026-10-05': 30 } });
+  await e.guardar(dir, { slug: 'cafe-wa', cliente: 'café norte ', nombre: 'WhatsApp bio', tipo: 'whatsapp', destino: 'https://wa.me/52331', clics: { '2026-10-10': 12 }, unicos: {} });
+  await e.guardar(dir, { slug: 'otro', cliente: 'Otro', nombre: 'X', tipo: 'web', destino: 'https://y.com', clics: { '2026-10-05': 999 } });
+  const reg = c.agregarRegistro(c.nuevo('Café Norte'), { id: 'a1', desde: '2026-10-01', hasta: '2026-10-31', valores: { ventas: 18, eabc1234: 30 } });
+  await c.guardar(dir, reg);
+  const r = await datosDelCliente(dir, 'Café Norte', '2026-10-01', '2026-10-31', { inicio: '2026-08-31', fin: '2026-09-30' });
+  assert.deepEqual(r.datos.embudo.conversion.clics, { actual: '40', anterior: '25' });
+  assert.deepEqual(r.datos.embudo.conversion.abrieronWhatsapp, { actual: '12', anterior: '0' });
+  assert.deepEqual(r.datos.embudo.conversion.ventas, { actual: '18', anterior: '' });
+  assert.deepEqual(r.datos.embudoEtapas, { eabc1234: { actual: '30', anterior: '' } });
+  assert.equal(r.resumenEnlaces.length, 2);
+  assert.equal(r.hayAlgo, true);
+  const nada = await datosDelCliente(dir, 'Nadie', '2026-10-01', '2026-10-31', { inicio: '2026-08-31', fin: '2026-09-30' });
+  assert.equal(nada.hayAlgo, false);
+});

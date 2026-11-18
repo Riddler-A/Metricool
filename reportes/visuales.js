@@ -113,6 +113,23 @@ function embudoCliente(embudo, d) {
   return `<div class="bloque-grafica"><h3>${esc(embudo.nombre)}</h3>${svg}${ideasHtml}</div>${tabla}`;
 }
 
+// ---------- Enlaces rastreables del cliente ----------
+
+function tablaEnlaces(series) {
+  const lista = (series?.enlaces || []).filter((e) => e.actual || e.anterior);
+  if (!lista.length) return '';
+  const filas = [...lista]
+    .sort((a, b) => b.actual - a.actual)
+    .map((e) => {
+      const v = calc.variacion(e.actual, e.anterior);
+      const clase = v === null ? 'tenue' : v > 0 ? 'sube' : v < 0 ? 'baja' : '';
+      const flecha = v === null ? '—' : `${v > 0 ? '▲' : v < 0 ? '▼' : ''} ${calc.mostrarVariacion(v)}`;
+      return `<tr><th scope="row">${esc(e.nombre)}<br><span class="rk-meta">${e.tipo === 'whatsapp' ? 'Abre WhatsApp' : 'Abre una página'}${e.canal ? ` · ${esc(e.canal)}` : ''}</span></th><td class="num">${esc(calc.mostrar(e.actual, 'numero'))}<br><span class="rk-meta">${esc(calc.mostrar(e.unicos, 'numero'))} personas</span></td><td class="num">${esc(calc.mostrar(e.anterior, 'numero'))}</td><td class="num ${clase}">${esc(flecha)}</td></tr>`;
+    })
+    .join('');
+  return `<h3>Clics en los enlaces del periodo</h3><table><thead><tr><th>Enlace</th><th class="num">Este periodo</th><th class="num">Periodo anterior</th><th class="num">Variación</th></tr></thead><tbody>${filas}</tbody></table><p class="pie-grafica">Enlaces cortos de Prisma CN: cada clic se cuenta y la persona llega a su destino. Sin datos de quién dio clic; no se cuentan vistas previas de redes ni robots.</p>`;
+}
+
 // ---------- Series diarias (vienen de "Traer datos de Postiz") ----------
 
 function graficasDiarias(series) {
@@ -304,6 +321,7 @@ module.exports = {
   tarjetasResumen,
   graficaEmbudo,
   embudoCliente,
+  tablaEnlaces,
   graficasDiarias,
   graficaInteraccion,
   ranking,

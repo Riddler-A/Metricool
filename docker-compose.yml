@@ -210,6 +210,8 @@ services:
       # /home/node ya pertenece al usuario node en la imagen; así el volumen nace con permisos de escritura
       DATOS_REPORTES: /home/node
       POSTIZ_INTERNO: 'http://postiz:5000/api'
+      # Para armar los enlaces que se comparten (redes.alexisconsultor.com/r/… y /c/…)
+      URL_PUBLICA: ${POSTIZ_URL}
     volumes:
       - ./reportes:/app:ro
       - reportes-data:/home/node
