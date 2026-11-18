@@ -121,3 +121,12 @@ em.auto { font-style: normal; font-size: 11px; font-weight: 600; color: var(--te
   .acciones-fijas { padding: 10px 16px; }
   .acciones-fijas .boton { flex: 1 1 auto; }
 }
+
+/* Fotos de anuncios e importación de CSV */
+select { width: 100%; padding: 9px 10px; border: 1px solid var(--borde); border-radius: var(--radio); background: var(--hueso); font: inherit; min-width: 120px; }
+.celda-imagen { min-width: 150px; white-space: nowrap; }
+.celda-imagen .vista-previa { display: block; width: 72px; height: 72px; object-fit: cover; border-radius: 8px; border: 1px solid var(--borde); margin-bottom: 4px; }
+.celda-imagen .vista-previa[hidden] { display: none; }
+.celda-imagen label.boton { cursor: pointer; }
+.importar-csv { margin-top: 12px; padding: 14px 16px; background: var(--hueso); border: 1px dashed var(--borde); border-radius: var(--radio); }
+.importar-csv summary { cursor: pointer; font-weight: 600; }

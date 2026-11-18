@@ -214,6 +214,15 @@ Cómo funciona:
   tarjetas de pauta (CPM, CPC, CTR y costo por resultado se calculan solos). Colores:
   terracota = este periodo, gris = periodo anterior (validados para daltonismo). Una gráfica
   sin datos no se imprime.
+- **Pauta (Meta, TikTok y Google Ads)**: una fila por campaña con plataforma, nombre,
+  objetivo, cifras y **foto del anuncio**. Se llena a mano o con **Importar campañas desde un
+  archivo**: el CSV que exporta cada plataforma (columnas en español o inglés, con o sin filas
+  de totales; Google Ads con sus líneas de título). Importar reemplaza las campañas de esa
+  plataforma y conserva las fotos si el nombre coincide. En el PDF salen el total, un resumen
+  por plataforma, una tarjeta por campaña con su foto y la comparación del costo por resultado.
+  Las fotos se reducen en el navegador (máx. 1200 px), el servidor solo acepta JPG/PNG reales
+  (≤ 1.5 MB, se revisan sus primeros bytes) y las guarda en `reportes-data/imagenes` con nombre
+  aleatorio; solo se ven con sesión de Postiz. (`reportes/pauta-csv.js`, `reportes/imagenes.js`)
 - Las secciones vacías no aparecen en el PDF, y la tasa de engagement se calcula siempre con
   la misma fórmula: interacciones ÷ alcance × 100.
 - Alcance e interacciones se suman **por publicación del periodo** (lo que entrega cada red).

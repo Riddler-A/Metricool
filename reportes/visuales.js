@@ -179,6 +179,55 @@ function tarjetasPauta(d) {
   return html.length ? `<div class="tarjetas-datos">${html.join('')}</div>` : '';
 }
 
+// ---------- Pauta: resumen por plataforma, tarjeta por campaña y costo por resultado ----------
+
+const NOMBRE_IMAGEN = /^[a-f0-9]{16}\.(jpg|png)$/;
+
+function campanasPauta(filas) {
+  const campanas = (filas || []).filter((c) => c && Object.values(c).some((v) => String(v ?? '').trim()));
+  if (!campanas.length) return '';
+  let html = '';
+
+  // Resumen por plataforma (solo si hay más de una).
+  const plataformas = [...new Set(campanas.map((c) => c.plataforma || 'Sin plataforma'))];
+  if (plataformas.length > 1) {
+    const filasPlat = plataformas.map((p) => {
+      const { total } = calc.resumenPauta(campanas.filter((c) => (c.plataforma || 'Sin plataforma') === p));
+      return `<tr><th scope="row">${esc(p)}</th><td class="num">${esc(calc.mostrar(total.inversion, 'dinero'))}</td><td class="num">${esc(calc.mostrar(total.alcance, 'numero'))}</td><td class="num">${esc(calc.mostrar(total.clics, 'numero'))}</td><td class="num">${esc(calc.mostrar(total.resultados, 'numero'))}</td><td class="num">${esc(calc.mostrar(total.costo, 'dinero'))}</td><td class="num">${esc(calc.mostrar(total.ctr, 'porcentaje'))}</td></tr>`;
+    });
+    html += `<h3>Por plataforma</h3><table><thead><tr><th>Plataforma</th><th class="num">Inversión</th><th class="num">Alcance</th><th class="num">Clics</th><th class="num">Resultados</th><th class="num">Costo por resultado</th><th class="num">CTR</th></tr></thead><tbody>${filasPlat.join('')}</tbody></table>`;
+  }
+
+  // Una tarjeta por campaña, con su foto.
+  const { filas: conIndicadores } = calc.resumenPauta(campanas);
+  const dato = (etq, v, f) => (v === null || v === undefined || String(v).trim() === '' ? '' : `<div><dt>${esc(etq)}</dt><dd>${esc(calc.mostrar(v, f))}</dd></div>`);
+  const tarjetas = conIndicadores.map((c) => {
+    const foto = NOMBRE_IMAGEN.test(c.imagen || '')
+      ? `<img src="/reportes/imagenes/${esc(c.imagen)}" alt="Anuncio de la campaña ${esc(c.campana)}">`
+      : `<div class="sin-foto"><span>${esc(c.plataforma || 'Campaña')}</span></div>`;
+    return `<article class="campana">
+  <div class="campana-foto">${foto}</div>
+  <div class="campana-info">
+    <p class="campana-plataforma">${esc(c.plataforma || 'Sin plataforma')}${c.objetivo ? ` · ${esc(c.objetivo)}` : ''}</p>
+    <h4>${esc(c.campana || 'Campaña sin nombre')}</h4>
+    <dl>
+      ${dato('Inversión', c.inversion, 'dinero')}${dato('Alcance', c.alcance, 'numero')}${dato('Clics', c.clics, 'numero')}${dato('Resultados', c.resultados, 'numero')}${dato('Costo por resultado', c.costo, 'dinero')}${dato('CTR', c.ctr, 'porcentaje')}${dato('CPM', c.cpm, 'dinero')}
+    </dl>
+  </div>
+</article>`;
+  });
+  html += `<h3>Campañas del periodo</h3><div class="campanas">${tarjetas.join('')}</div>`;
+
+  // Comparar el costo por resultado entre campañas (lo que más ayuda a decidir presupuesto).
+  const costos = conIndicadores
+    .filter((c) => c.costo !== null)
+    .map((c) => ({ etiqueta: c.campana.length > 22 ? `${c.campana.slice(0, 21)}…` : c.campana, valor: c.costo, nota: c.plataforma ? `· ${c.plataforma}` : '' }));
+  if (costos.length >= 2) {
+    html += `<div class="bloque-grafica"><h3>Costo por resultado por campaña</h3>${g.barras({ filas: costos, formato: 'dinero', etiqueta: 'Costo por resultado por campaña' })}<p class="pie-grafica">Más corta es mejor: cuánto costó cada mensaje, clic o venta.</p></div>`;
+  }
+  return html;
+}
+
 // ---------- Historial: reportes anteriores del mismo cliente ----------
 
 function historial(reporte, otros) {
@@ -217,5 +266,6 @@ module.exports = {
   graficaFormatos,
   graficaRedes,
   tarjetasPauta,
+  campanasPauta,
   historial,
 };

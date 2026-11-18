@@ -17,6 +17,7 @@ const TINTA2 = '#4A4A4A';
 const compacto = new Intl.NumberFormat('es-MX', { notation: 'compact', maximumFractionDigits: 1 });
 const entero = new Intl.NumberFormat('es-MX', { maximumFractionDigits: 0 });
 const decimal = new Intl.NumberFormat('es-MX', { maximumFractionDigits: 1 });
+const centavos = new Intl.NumberFormat('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 function esc(v) {
   return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -25,7 +26,7 @@ function esc(v) {
 function fmt(n, formato) {
   if (n === null || n === undefined || Number.isNaN(n)) return '—';
   if (formato === 'porcentaje') return `${decimal.format(n)}%`;
-  if (formato === 'dinero') return `$${entero.format(n)}`;
+  if (formato === 'dinero') return `$${centavos.format(n)}`;
   return Math.abs(n) >= 10000 ? compacto.format(n) : Number.isInteger(n) ? entero.format(n) : decimal.format(n);
 }
 

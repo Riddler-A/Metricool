@@ -167,3 +167,23 @@ table.ranking img, table.ranking .sin-miniatura {
 }
 .rk-meta { font-size: 7.5pt; color: var(--gris-nota); }
 .bloque-grafica { break-inside: avoid; }
+
+/* ----- Campañas de pauta ----- */
+.campanas { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; margin: 2mm 0 5mm; }
+.campana {
+  display: flex; gap: 4mm; background: #fff; border: 0.3mm solid var(--borde); border-radius: var(--radio);
+  padding: 3mm; break-inside: avoid; border-left: 1mm solid var(--terracota);
+}
+.campana-foto { flex: 0 0 28mm; }
+.campana-foto img, .campana-foto .sin-foto {
+  display: block; width: 28mm; height: 35mm; object-fit: cover; border-radius: 2.5mm; background: var(--suave);
+}
+.campana-foto .sin-foto { display: flex; align-items: center; justify-content: center; text-align: center; padding: 2mm; }
+.campana-foto .sin-foto span { font-size: 8pt; color: var(--gris-texto); font-weight: 600; }
+.campana-info { min-width: 0; flex: 1; }
+.campana-plataforma { margin: 0 0 1mm !important; font-size: 7.5pt; color: var(--gris-texto); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+.campana h4 { font-family: 'Fraunces', Georgia, serif; font-size: 11.5pt; font-weight: 600; margin: 0 0 2mm; line-height: 1.2; overflow-wrap: anywhere; }
+.campana dl { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2mm 3mm; margin: 0; }
+.campana dt { font-size: 7pt; color: var(--gris-nota); }
+.campana dd { margin: 0; font-size: 9.5pt; font-weight: 600; font-variant-numeric: tabular-nums; }
+@media screen and (max-width: 820px) { .campanas { grid-template-columns: 1fr; } }

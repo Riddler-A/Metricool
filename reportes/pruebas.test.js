@@ -225,3 +225,86 @@ test('pauta: CPM, CPC y CTR', () => {
   assert.equal(r.total.cpc, 1.32);
   assert.equal(r.total.ctr, 0.45);
 });
+
+// ---------- Pauta: CSV y fotos ----------
+
+test('CSV de Meta en español con fila de totales', () => {
+  const csv = require('./pauta-csv');
+  const texto = '﻿"Nombre de la campaña","Objetivo","Alcance","Impresiones","Importe gastado (MXN)","Clics en el enlace","Resultados"\n' +
+    '"Cold brew octubre","Mensajes","38,450","53,390","1,200.00","239","31"\n' +
+    '"Pan de muerto","Alcance","14,100","18,200","315.00","61","9"\n' +
+    '"","","52,550","71,590","1,515.00","300","40"\n';
+  const { filas, avisos } = csv.leer(texto, 'Meta');
+  assert.equal(filas.length, 2);
+  assert.deepEqual(filas[0], { plataforma: 'Meta', campana: 'Cold brew octubre', objetivo: 'Mensajes', inversion: '1200.00', impresiones: '53390', alcance: '38450', clics: '239', resultados: '31' });
+  assert.deepEqual(avisos, []);
+});
+
+test('CSV de Google Ads con títulos antes del encabezado y totales', () => {
+  const csv = require('./pauta-csv');
+  const texto = 'Informe de campañas\n"1 de octubre de 2026 - 31 de octubre de 2026"\nCampaña,Tipo de campaña,Impr.,Clics,Costo,Conversiones\n' +
+    'Búsqueda cafetería,Búsqueda,"12,000",480,"2,100.50",22\nTotal: cuenta,,"12,000",480,"2,100.50",22\n';
+  const { filas, avisos } = csv.leer(texto, 'Google Ads');
+  assert.equal(filas.length, 1);
+  assert.equal(filas[0].campana, 'Búsqueda cafetería');
+  assert.equal(filas[0].inversion, '2100.50');
+  assert.equal(filas[0].impresiones, '12000');
+  assert.equal(filas[0].resultados, '22');
+  assert.match(avisos.join(' '), /alcance/);
+});
+
+test('CSV de TikTok con punto y coma y cifras europeas', () => {
+  const csv = require('./pauta-csv');
+  const { filas } = csv.leer('Campaign name;Cost;Impressions;Reach;Clicks;Conversions\nReto latte;1.234,56;20.000;15.500;300;12\n', 'TikTok');
+  assert.equal(filas[0].inversion, '1234.56');
+  assert.equal(filas[0].impresiones, '20000');
+});
+
+test('CSV sin columnas reconocibles da un mensaje claro', () => {
+  const csv = require('./pauta-csv');
+  assert.throws(() => csv.leer('a,b\n1,2\n', 'Meta'), /nombre de campaña/);
+  assert.throws(() => csv.leer('Campaign name,Cost\nX,1\n', 'Otra'), /plataforma/);
+});
+
+test('importar CSV conserva fotos y no toca otras plataformas', () => {
+  const csv = require('./pauta-csv');
+  const previas = [
+    { plataforma: 'Meta', campana: 'Cold brew octubre', imagen: 'aaaaaaaaaaaaaaaa.jpg', objetivo: 'Mensajes' },
+    { plataforma: 'TikTok', campana: 'Reto latte', imagen: 'bbbbbbbbbbbbbbbb.jpg' },
+  ];
+  const r = csv.combinar(previas, [{ plataforma: 'Meta', campana: 'cold brew OCTUBRE', inversion: '10' }], 'Meta');
+  assert.equal(r.length, 2);
+  assert.equal(r.find((c) => c.plataforma === 'TikTok').imagen, 'bbbbbbbbbbbbbbbb.jpg');
+  assert.equal(r.find((c) => c.plataforma === 'Meta').imagen, 'aaaaaaaaaaaaaaaa.jpg');
+});
+
+test('fotos: solo JPG o PNG de verdad y nombres seguros', async (t) => {
+  const os = require('node:os');
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const img = require('./imagenes');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prisma-img-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const png = Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d4944415478da63f8ffff3f0005fe02fea7d6a4a80000000049454e44ae426082', 'hex');
+  const nombre = await img.guardar(dir, `data:image/png;base64,${png.toString('base64')}`);
+  assert.match(nombre, /^[a-f0-9]{16}\.png$/);
+  assert.ok(fs.existsSync(path.join(dir, 'imagenes', nombre)));
+  // Un HTML disfrazado de imagen se rechaza.
+  await assert.rejects(img.guardar(dir, `data:image/png;base64,${Buffer.from('<svg onload=alert(1)>').toString('base64')}`), /no es una imagen/);
+  await assert.rejects(img.guardar(dir, 'data:image/svg+xml;base64,PHN2Zz4='), /JPG o PNG/);
+  assert.equal(img.valida('../server.js'), false);
+  assert.equal(img.valida('aaaaaaaaaaaaaaaa.jpg'), true);
+});
+
+test('tarjetas de campaña con foto y comparación de costos', () => {
+  const v = require('./visuales');
+  const html = v.campanasPauta([
+    { plataforma: 'Meta', campana: 'Cold brew', inversion: '1200', resultados: '31', clics: '239', impresiones: '53390', imagen: 'aaaaaaaaaaaaaaaa.jpg' },
+    { plataforma: 'TikTok', campana: 'Reto <latte>', inversion: '500', resultados: '10', imagen: '../malo.jpg' },
+  ]);
+  assert.match(html, /\/reportes\/imagenes\/aaaaaaaaaaaaaaaa\.jpg/);
+  assert.doesNotMatch(html, /malo\.jpg/);
+  assert.match(html, /Reto &lt;latte&gt;/);
+  assert.match(html, /Por plataforma/);
+  assert.match(html, /Costo por resultado por campaña/);
+});

@@ -10,12 +10,14 @@ const crypto = require('node:crypto');
 const vistas = require('./vistas');
 const postiz = require('./postiz');
 const { armar, mezclar } = require('./datos');
+const imagenes = require('./imagenes');
+const pautaCsv = require('./pauta-csv');
 
 const PUERTO = Number(process.env.PORT || 8080);
 const DATOS = process.env.DATOS_REPORTES || '/data';
 const PAPELERA = path.join(DATOS, 'papelera');
 const R = '/reportes';
-const MAX_CUERPO = 512 * 1024;
+const MAX_CUERPO = 12 * 1024 * 1024; // incluye fotos de anuncios y el CSV de campañas
 const ESTATICOS = {
   'formulario.css': 'text/css; charset=utf-8',
   'reporte.css': 'text/css; charset=utf-8',
@@ -70,7 +72,7 @@ function responder(res, estado, html, extra = {}) {
     'content-type': 'text/html; charset=utf-8',
     'cache-control': 'no-store',
     'content-security-policy':
-      "default-src 'self'; img-src 'self' data: https:; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self'; form-action 'self'; frame-ancestors 'self'; base-uri 'none'",
+      "default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self'; form-action 'self'; frame-ancestors 'self'; base-uri 'none'",
     ...extra,
   });
   res.end(html);
@@ -134,6 +136,10 @@ async function manejar(req, res) {
     return responder(res, 403, vistas.error({ titulo: 'Solicitud rechazada', mensaje: 'La solicitud no vino de esta página.' }));
   }
 
+  if (ruta.startsWith('/imagenes/') && req.method === 'GET') {
+    return imagenes.servir(DATOS, ruta.slice('/imagenes/'.length), res);
+  }
+
   if (ruta === '/' && req.method === 'GET') {
     return responder(res, 200, vistas.lista({ reportes: await todos(), mensaje: url.searchParams.get('m') }));
   }
@@ -185,18 +191,56 @@ async function manejar(req, res) {
 
   if (accion === 'guardar') {
     const cuerpo = new URLSearchParams(await leerCuerpo(req));
+    const avisos = [];
+
+    // Fotos nuevas de campañas: se revisan y guardan, y en su lugar queda el nombre del archivo.
+    for (const [k, v] of [...cuerpo.entries()]) {
+      const m = /^datos\.pauta\.campanas\.(\d{1,3})\.imagenNueva$/.exec(k);
+      if (!m) continue;
+      cuerpo.delete(k);
+      if (!v) continue;
+      try {
+        cuerpo.set(`datos.pauta.campanas.${m[1]}.imagen`, await imagenes.guardar(DATOS, v));
+      } catch (e) {
+        avisos.push(`Foto de la campaña ${Number(m[1]) + 1}: ${e.message}`);
+      }
+    }
+    const csvTexto = cuerpo.get('csv.contenido') || '';
+    const csvPlataforma = cuerpo.get('csv.plataforma') || '';
+    cuerpo.delete('csv.contenido');
+    cuerpo.delete('csv.plataforma');
+
     const enviado = armar(cuerpo.entries());
     reporte.meta = { ...(enviado.meta || {}), cuentas: enviado.meta?.cuentas || [] };
     reporte.datos = enviado.datos || {};
+    for (const c of reporte.datos.pauta?.campanas || []) {
+      if (c.imagen && !imagenes.valida(c.imagen)) c.imagen = '';
+    }
     const que = cuerpo.get('accion');
     let mensaje = 'Guardado.';
+    reporte.avisos = avisos;
+
+    if (que === 'importarCsv') {
+      try {
+        if (!csvTexto) throw new Error('Elige el archivo CSV.');
+        if (csvTexto.length > 3 * 1024 * 1024) throw new Error('El archivo es demasiado grande (máximo 3 MB).');
+        const { filas, avisos: avisosCsv } = pautaCsv.leer(csvTexto, csvPlataforma);
+        reporte.datos.pauta ??= {};
+        reporte.datos.pauta.campanas = pautaCsv.combinar(reporte.datos.pauta.campanas, filas, csvPlataforma);
+        reporte.avisos.push(...avisosCsv);
+        mensaje = `${filas.length === 1 ? "Se importó 1 campaña" : `Se importaron ${filas.length} campañas`} de ${csvPlataforma}. Agrega la foto de cada una si quieres que aparezca.`;
+      } catch (e) {
+        reporte.avisos.push(`No se pudo importar el archivo: ${e.message}`);
+        mensaje = 'Guardado, pero no se pudo importar el archivo.';
+      }
+    }
 
     if (que === 'importar') {
       try {
         const traido = await postiz.traerDatos(cookie, reporte.meta);
         reporte.datos = mezclar(reporte.datos, traido.datos);
         reporte.series = traido.series;
-        reporte.avisos = traido.avisos;
+        reporte.avisos.push(...traido.avisos);
         const hoy = vistas.diaMexico();
         reporte.datos.metodologia ??= {};
         reporte.datos.metodologia.fecha = hoy;
@@ -208,7 +252,7 @@ async function manejar(req, res) {
         mensaje = 'Datos de Postiz actualizados. Revisa los avisos y completa lo que falta a mano.';
       } catch (e) {
         if (e.sesion) return redirigir(res, `/auth/login?returnUrl=${encodeURIComponent(`${R}/${id}/editar`)}`);
-        reporte.avisos = [`No se pudieron traer los datos: ${e.message}`];
+        reporte.avisos.push(`No se pudieron traer los datos: ${e.message}`);
         mensaje = 'Guardado, pero no se pudieron traer los datos de Postiz.';
       }
     }

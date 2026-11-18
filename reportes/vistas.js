@@ -141,18 +141,46 @@ function campoForm(seccion, campo, datos) {
     const cab = campo.columnas
       .map((c) => `<th>${esc(c.titulo)}${c.auto ? ' <em class="auto">Postiz</em>' : ''}</th>`)
       .join('');
-    const fila = (i) =>
-      `<tr>${campo.columnas
-        .map(
-          (c) =>
-            `<td><input type="${c.formato === 'enlace' ? 'url' : 'text'}" name="${base}.${i}.${c.clave}" value="${esc(filas[i]?.[c.clave])}" aria-label="${esc(c.titulo)} ${i + 1}"></td>`
-        )
-        .join('')}</tr>`;
+    const celda = (c, i) => {
+      const nombre = `${base}.${i}.${c.clave}`;
+      const v = filas[i]?.[c.clave];
+      const etq = `${esc(c.titulo)} ${i + 1}`;
+      if (c.formato === 'opciones') {
+        const ops = ['', ...c.opciones].map((o) => `<option value="${esc(o)}"${o === v ? ' selected' : ''}>${esc(o || '—')}</option>`).join('');
+        return `<td><select name="${nombre}" aria-label="${etq}">${ops}</select></td>`;
+      }
+      if (c.formato === 'imagen') {
+        // La foto se reduce en el navegador y viaja como texto en imagenNueva; el servidor
+        // la revisa, la guarda y deja aquí solo su nombre de archivo.
+        const actual = /^[a-f0-9]{16}\.(jpg|png)$/.test(v || '') ? v : '';
+        return `<td class="celda-imagen" data-imagen>
+  <input type="hidden" name="${nombre}" value="${esc(actual)}">
+  <input type="hidden" name="${base}.${i}.imagenNueva" value="">
+  <img class="vista-previa" alt=""${actual ? ` src="${R}/imagenes/${esc(actual)}"` : ' hidden'}>
+  <label class="boton terciario">Elegir foto<input type="file" accept="image/jpeg,image/png,image/webp" hidden aria-label="${etq}"></label>
+  <button type="button" class="boton terciario" data-quitar-imagen${actual ? '' : ' hidden'}>Quitar</button>
+</td>`;
+      }
+      return `<td><input type="${c.formato === 'enlace' ? 'url' : 'text'}" name="${nombre}" value="${esc(v)}" aria-label="${etq}"></td>`;
+    };
+    const fila = (i) => `<tr>${campo.columnas.map((c) => celda(c, i)).join('')}</tr>`;
     const cuerpo = Array.from({ length: n }, (_, i) => fila(i)).join('');
     const puedeAgregar = !campo.filasMax || n < campo.filasMax;
+    const csv = campo.importarCsv
+      ? `<details class="importar-csv">
+  <summary>Importar campañas desde un archivo de Meta, TikTok o Google Ads</summary>
+  <p class="nota">Exporta el reporte de campañas en CSV (Administrador de anuncios de Meta, TikTok Ads Manager o Google Ads → Campañas → Descargar → CSV). Se reconocen columnas en español e inglés. Las campañas de esa plataforma se reemplazan; las fotos que ya pusiste se conservan si el nombre de la campaña coincide.</p>
+  <div class="rejilla">
+    <label class="campo"><span>Plataforma</span><select name="csv.plataforma"><option>Meta</option><option>TikTok</option><option>Google Ads</option></select></label>
+    <label class="campo"><span>Archivo CSV</span><input type="file" accept=".csv,text/csv" data-csv></label>
+  </div>
+  <input type="hidden" name="csv.contenido" value="">
+  <button class="boton secundario" type="submit" name="accion" value="importarCsv">Importar campañas</button>
+</details>`
+      : '';
     return `<div class="tabla-campo">${campo.titulo ? `<h4>${esc(campo.titulo)}</h4>` : ''}${ayuda}
 <table data-base="${base}"><thead><tr>${cab}</tr></thead><tbody>${cuerpo}</tbody></table>
-${puedeAgregar ? '<button type="button" class="boton terciario" data-agregar-fila>Agregar fila</button>' : ''}</div>`;
+${puedeAgregar ? '<button type="button" class="boton terciario" data-agregar-fila>Agregar fila</button>' : ''}${csv}</div>`;
   }
   return '';
 }
@@ -300,14 +328,7 @@ function tablaLibre(campo, valor) {
     return `<table class="kpis"><thead><tr><th>KPI</th><th class="num">Este periodo</th><th class="num">Periodo anterior</th><th class="num">Variación</th><th class="num">Meta</th><th>Estado</th></tr></thead><tbody>${cuerpo}</tbody></table>`;
   }
 
-  if (campo.especial === 'pauta') {
-    const { filas: fs, total } = calc.resumenPauta(filas);
-    const fila = (f, cab) =>
-      `<tr><th scope="row">${esc(cab)}</th><td>${esc(f.objetivo || '')}</td><td class="num">${esc(calc.mostrar(f.inversion, 'dinero'))}</td><td class="num">${esc(calc.mostrar(f.alcance, 'numero'))}</td><td class="num">${esc(calc.mostrar(f.clics, 'numero'))}</td><td class="num">${esc(calc.mostrar(f.resultados, 'numero'))}</td><td class="num">${esc(calc.mostrar(f.costo, 'dinero'))}</td><td class="num">${esc(calc.mostrar(f.ctr, 'porcentaje'))}</td></tr>`;
-    const cuerpo = fs.map((f) => fila(f, f.campana)).join('');
-    const pie = fs.length > 1 ? `<tfoot>${fila({ ...total, objetivo: '' }, 'Total')}</tfoot>` : '';
-    return `<table><thead><tr><th>Campaña</th><th>Objetivo</th><th class="num">Inversión (MXN)</th><th class="num">Alcance</th><th class="num">Clics</th><th class="num">Resultados</th><th class="num">Costo por resultado</th><th class="num">CTR</th></tr></thead><tbody>${cuerpo}</tbody>${pie}</table>`;
-  }
+  if (campo.especial === 'pauta') return visuales.campanasPauta(filas);
 
   const columnas = campo.columnas.filter((c) => c.clave !== 'enlace');
   const enlace = campo.columnas.some((c) => c.clave === 'enlace');

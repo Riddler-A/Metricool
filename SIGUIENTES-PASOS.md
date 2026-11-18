@@ -143,8 +143,17 @@ Suite del mismo periodo. Puntos a revisar, porque solo se probaron con un Postiz
 - Que las miniaturas del ranking carguen: salen de `image[0].thumbnail` o `image[0].path`
   del post. Si la red guarda la imagen fuera de Postiz, puede verse el recuadro vacío.
 - Seguidores nuevos: la red solo guarda ~30 días; el periodo anterior suele ir a mano.
+- Importar un CSV real de cada plataforma que use Alexis (Meta, TikTok, Google Ads). Los
+  nombres de columna se reconocen por sinónimos en `reportes/pauta-csv.js` (`SINONIMOS`),
+  probados solo con archivos de ejemplo. Si una columna no se reconoce, agrega su nombre ahí
+  y un caso en `pruebas.test.js`.
 Si algo no cuadra, corrígelo en `calculos.js` o `postiz.js`, agrega el caso a
 `reportes/pruebas.test.js` y vuelve a subir.
+
+**Paso H3 (más adelante). Conectar las plataformas de anuncios por API.** Hoy la pauta se
+importa por CSV. Traerla sola requiere: Meta Marketing API (app de Meta con permiso
+`ads_read` y revisión), TikTok Business API (cuenta de desarrollador y aprobación) y Google Ads
+API (developer token aprobado por Google). Preguntar a Alexis si vale la pena antes de empezar.
 
 **Paso I. Cerrar pendientes.** Actualizar `servidor.md` de la skill `prisma-cn` con la
 fila de `redes.` (carpeta `~/apps/prisma-redes`, Docker, puerto 3010 / NODEJS3010) y
