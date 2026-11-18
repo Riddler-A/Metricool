@@ -45,7 +45,7 @@ abierto) con una capa visual de Prisma CN. Dirección final: https://redes.alexi
 - [x] Subdominio `redes.alexisconsultor.com` creado en Hestia con SSL de Let's Encrypt.
 - [x] Archivos subidos al servidor en `~/apps/prisma-redes` (versión del 15-nov-2026).
 - [x] `.env` del servidor ya creado con `scripts/crear-env.sh` (secretos nuevos, permisos
-      600, puerto 3010, versión v2.25.1). Le faltan solo las llaves de las redes.
+      600, puerto 3000, versión v2.25.1). Le faltan solo las llaves de las redes.
 - [x] `scripts/revisar.sh` corrido en el servidor: solo marca las dos fallas de la
       sección 3 (Docker y la plantilla de Hestia).
 - [x] **Módulo de reportes** (17-nov-2026, con gráficas): genera el "Reporte de resultados de redes
@@ -60,12 +60,12 @@ abierto) con una capa visual de Prisma CN. Dirección final: https://redes.alexi
 
 1. **Docker no está instalado en el servidor.** Se instala con `root` (README, paso 2).
    El mismo bloque crea 4 GB de swap y deja PM2 arrancando solo.
-2. **La plantilla de proxy en Hestia apunta al puerto equivocado.** Está en `NODEJS3003`
-   y el 3003 lo ocupa el sitio de otro usuario del servidor (Punto y Aparte), así que hoy
-   `redes.alexisconsultor.com` **muestra ese sitio**. Alexis debe entrar a Hestia → Web →
-   editar `redes.alexisconsultor.com` → Advanced Options → Proxy Template: **`NODEJS3010`**,
-   y de paso activar **HSTS**. Con eso la dirección dará `502` hasta que arranque Postiz
-   (es lo esperado).
+2. **Puerto 3000.** La plantilla de Hestia ya es `NODEJS3000` (18-nov-2026). El puerto lo
+   usaban dos apps de prueba de PM2: "alexisconsultor" ya está detenida (con permiso de
+   Alexis); "web-alexisconsultor" lo tomó después y falta el permiso de Alexis para
+   detenerla (`pm2 stop web-alexisconsultor && pm2 save`, sin borrar archivos). Mientras
+   siga encendida, `redes.alexisconsultor.com` muestra "NodeJS funcionando desde Hestia".
+   Falta también activar **HSTS** en Hestia.
 
 ## 4. Pasos cuando ya haya Docker (en este orden)
 
@@ -73,13 +73,12 @@ Cada paso dice cómo comprobar que salió bien. No avances si la comprobación f
 
 **Paso A. Revisar el servidor (solo lectura).**
 ```bash
-ssh -i ~/.ssh/hestia_alexisconsultor -o BatchMode=yes alexisconsultorcom@185.137.122.204 'docker --version; docker ps; free -h; ss -ltn | grep -E ":(3010|8233) "'
+ssh -i ~/.ssh/hestia_alexisconsultor -o BatchMode=yes alexisconsultorcom@185.137.122.204 'docker --version; docker ps; free -h; ss -ltn | grep -E ":(3000|8233) "'
 ```
 Bien si: Docker responde, `docker ps` no da error de permisos, hay al menos 3.5 GB
-disponibles y los puertos 3010 y 8233 no aparecen. Si `docker ps` da "permission denied",
-falta `usermod -aG docker alexisconsultorcom` (root) y volver a entrar por SSH. Si el 3010
-está ocupado, elige otro puerto libre entre 3004 y 3010, y cambia `POSTIZ_PORT` y la
-plantilla de Hestia al mismo número.
+disponibles y los puertos 3000 y 8233 no aparecen. Si `docker ps` da "permission denied",
+falta `usermod -aG docker alexisconsultorcom` (root) y volver a entrar por SSH. Si el 3000
+está ocupado, revisa con `pm2 list` que las apps de prueba sigan detenidas (sección 3).
 
 **Paso B. Subir la versión actual del repo.** Desde la carpeta del repo, en la computadora:
 ```bash
@@ -161,7 +160,7 @@ importa por CSV. Traerla sola requiere: Meta Marketing API (app de Meta con perm
 API (developer token aprobado por Google). Preguntar a Alexis si vale la pena antes de empezar.
 
 **Paso I. Cerrar pendientes.** Actualizar `servidor.md` de la skill `prisma-cn` con la
-fila de `redes.` (carpeta `~/apps/prisma-redes`, Docker, puerto 3010 / NODEJS3010) y
+fila de `redes.` (carpeta `~/apps/prisma-redes`, Docker, puerto 3000 / NODEJS3000) y
 actualizar este archivo.
 
 ## 5. Cosas que ya se sabe que pueden fallar

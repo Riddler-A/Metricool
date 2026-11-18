@@ -10,8 +10,8 @@ aplica con una capa aparte que se edita sin recompilar nada.
   el mismo de alexisconsultor.com e interno.alexisconsultor.com)
 
 ```
-navegador ──HTTPS──► nginx de Hestia (SSL Let's Encrypt, plantilla NODEJS3010)
-                       └──► 127.0.0.1:3010 → branding (nginx: inyecta brand.css y brand.js)
+navegador ──HTTPS──► nginx de Hestia (SSL Let's Encrypt, plantilla NODEJS3000)
+                       └──► 127.0.0.1:3000 → branding (nginx: inyecta brand.css y brand.js)
                                                └──► postiz ──► Postgres / Redis / Temporal
 ```
 
@@ -22,7 +22,7 @@ navegador ──HTTPS──► nginx de Hestia (SSL Let's Encrypt, plantilla NOD
 | `docker-compose.yml` | Todos los servicios. Se basa en el compose oficial de Postiz y agrega la capa de marca. |
 | `.env.example` | Plantilla de configuración: dirección, contraseñas y llaves de las redes sociales. |
 | `branding/` | **Identidad visual**: colores y tipografías (`brand.css`), símbolo (`simbolo-negro.png` y `simbolo-dorado.png`), favicon y nombre en la pestaña (`brand.js`). |
-| `hestia/` | Plantilla de proxy propia (`prisma-postiz.tpl` y `.stpl`). **Ya no hace falta**: el servidor nuevo usa la plantilla `NODEJS3010` de Hestia. Se conserva por si algún día se cambia de servidor. |
+| `hestia/` | Plantilla de proxy propia (`prisma-postiz.tpl` y `.stpl`). **Ya no hace falta**: el servidor nuevo usa la plantilla `NODEJS3000` de Hestia. Se conserva por si algún día se cambia de servidor. |
 | `proxy/` | Configuración del nginx de la capa de marca. Normalmente no se toca. |
 | `scripts/` | Instalación, revisión, verificación y respaldo en el servidor (ver paso 4). |
 | `reportes/` | **Reportes de resultados** con la identidad de Prisma CN, en `/reportes` (ver sección "Reportes"). |
@@ -50,9 +50,10 @@ Hestia, y dice qué falta. Lo que revisa:
   ampliar el VPS. (15-nov-2026: 7.8 GB en total, 5.1 GB disponibles. Cabe, con poco
   margen: por eso el paso 2 agrega swap.)
 - **Docker:** si no está, hay que instalarlo (paso 2).
-- **Puerto 3010:** el servidor lo comparten otros usuarios de Hestia y cualquiera puede
-  ocupar un puerto. El 3003 ya lo usa el sitio de otro usuario. Si el 3010 se ocupa,
-  elige otro libre (`ss -ltn`) y cambia `POSTIZ_PORT` y la plantilla `NODEJS30xx` del paso 3.
+- **Puerto 3000:** lo usaban dos apps de prueba de PM2 ("alexisconsultor" y
+  "web-alexisconsultor"), que se detuvieron para dejarlo libre. Si `revisar.sh` dice que está
+  ocupado, revisa con `pm2 list` que sigan detenidas. Otra opción es elegir otro puerto libre
+  (`ss -ltn`) y cambiar `POSTIZ_PORT` y la plantilla `NODEJS30xx` del paso 3 al mismo número.
 
 ## 1. Probar en tu computadora primero
 
@@ -66,7 +67,7 @@ cp .env.example .env
 
 En `.env` para la prueba local:
 
-- `POSTIZ_URL=http://localhost:3010`
+- `POSTIZ_URL=http://localhost:3000`
 - `NOT_SECURED=true`
 - `JWT_SECRET`, `POSTGRES_PASSWORD` y `TEMPORAL_DB_PASSWORD`: genera cada uno con
   `openssl rand -hex 32` y pégalos tú.
@@ -75,7 +76,7 @@ En `.env` para la prueba local:
 docker compose up -d
 ```
 
-Espera unos minutos y abre http://localhost:3010. Revisa que se vean los colores, las
+Espera unos minutos y abre http://localhost:3000. Revisa que se vean los colores, las
 tipografías y el símbolo de Prisma CN. Para apagar todo: `docker compose down`.
 
 ## 2. Instalar Docker en el servidor (una sola vez, requiere root)
@@ -102,23 +103,22 @@ permisos de root sobre el servidor; cuida la llave SSH de `alexisconsultorcom`.
 
 ## 3. Subdominio en Hestia
 
-Este servidor no permite plantillas propias, así que se usa la de Hestia `NODEJS3010`
-(manda el dominio a `127.0.0.1:3010`, el `POSTIZ_PORT` del `.env`). La carpeta `hestia/`
+Este servidor no permite plantillas propias, así que se usa la de Hestia `NODEJS3000`
+(manda el dominio a `127.0.0.1:3000`, el `POSTIZ_PORT` del `.env`). La carpeta `hestia/`
 no se usa aquí.
 
-En el panel de Hestia, con el usuario `alexisconsultorcom` (15-nov-2026: el dominio y el
-SSL ya existen, pero la plantilla está en `NODEJS3003` y por eso la dirección muestra el
-sitio de otro usuario; falta cambiarla a `NODEJS3010` y activar HSTS):
+En el panel de Hestia, con el usuario `alexisconsultorcom` (18-nov-2026: dominio, SSL y
+plantilla `NODEJS3000` ya están; falta activar HSTS):
 
 1. **Web → Agregar dominio web:** `redes.alexisconsultor.com`. Desactiva la redirección a "www".
 2. En **DNS**, confirma que el registro `redes` tipo A apunte a `185.137.122.204`.
 3. Edita el dominio:
-   - **Plantilla de proxy (Advanced Options):** `NODEJS3010`
+   - **Plantilla de proxy (Advanced Options):** `NODEJS3000`
    - **SSL:** activado, con **Let's Encrypt**, y **forzar HTTPS**.
    - **HSTS:** actívalo (obliga al navegador a usar siempre HTTPS).
 4. Guarda.
 
-Con la plantilla `NODEJS3010` y Postiz sin arrancar, la dirección responde `502`: es normal.
+Con la plantilla `NODEJS3000` y Postiz sin arrancar, la dirección responde `502`: es normal.
 
 ## 4. Subir y arrancar la herramienta en el servidor
 

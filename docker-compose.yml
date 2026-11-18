@@ -15,7 +15,7 @@ services:
     restart: always
     # Solo escucha dentro del servidor; Hestia es quien lo publica con HTTPS.
     ports:
-      - '127.0.0.1:${POSTIZ_PORT:-3010}:80'
+      - '127.0.0.1:${POSTIZ_PORT:-3000}:80'
     volumes:
       - ./proxy/branding.conf:/etc/nginx/conf.d/default.conf:ro
       - ./branding:/usr/share/nginx/brand:ro

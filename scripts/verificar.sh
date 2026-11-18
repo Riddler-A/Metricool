@@ -4,7 +4,7 @@
 source "$(dirname "${BASH_SOURCE[0]}")/comun.sh"
 
 echo "Verificación de Prisma CN · Redes"
-PUERTO=$(env_valor POSTIZ_PORT); PUERTO=${PUERTO:-3010}
+PUERTO=$(env_valor POSTIZ_PORT); PUERTO=${PUERTO:-3000}
 URL=$(env_valor POSTIZ_URL)
 
 echo; echo "Contenedores"

@@ -55,7 +55,7 @@ else
 fi
 
 echo; echo "Puerto y Hestia"
-PUERTO=$(env_valor POSTIZ_PORT); PUERTO=${PUERTO:-3010}
+PUERTO=$(env_valor POSTIZ_PORT); PUERTO=${PUERTO:-3000}
 NUESTRO=$(docker ps --filter name=prisma-branding --format '{{.Ports}}' 2>/dev/null | grep -c ":$PUERTO->" || true)
 if [ "$NUESTRO" -gt 0 ]; then
   ok "Puerto $PUERTO: lo usa esta herramienta"

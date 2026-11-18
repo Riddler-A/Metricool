@@ -13,7 +13,7 @@ docker compose pull --quiet || { echo "Falló la descarga."; exit 1; }
 echo "Encendiendo servicios..."
 docker compose up -d || { echo "Falló el arranque."; exit 1; }
 
-PUERTO=$(grep -E '^POSTIZ_PORT=' .env | cut -d= -f2- | tr -d '\r'); PUERTO=${PUERTO:-3010}
+PUERTO=$(grep -E '^POSTIZ_PORT=' .env | cut -d= -f2- | tr -d '\r'); PUERTO=${PUERTO:-3000}
 echo "Esperando a que Postiz responda (hasta 5 minutos)..."
 for _ in $(seq 1 60); do
   [ "$(curl -s -m 5 -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PUERTO/auth")" = "200" ] && break
